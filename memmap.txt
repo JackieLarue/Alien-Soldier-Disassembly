@@ -142,3 +142,21 @@ $9C - RUNNER/AD2025
 $9D - RUNNER/AD2025
 $9E - RUNNER/AD2025
 $9F - SFX
+
+Sprite flags?:
+  0
+  1
+  2
+  3
+  4
+  5
+  6
+  7
+  8
+  9
+  A
+  B
+  C
+  D
+  E
+  F
