@@ -160,3 +160,5 @@ Sprite flags?:
   D
   E
   F
+  
+  RAM ranges FFFFE300 - FFFFE400 contain the palette data 

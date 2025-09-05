@@ -174,13 +174,16 @@ def decode_vdp_command(command, ext_vram=False, w320_mode=False):
             print(f"  - DMA Enabled: {'on' if dma_enabled else 'off'}")
             print(f"  - VRAM to VRAM Copy: {'on' if vram_copy else 'off'}")
             print(f"  - Address: ${addr:05X}")
+
+def auto_int(x):
+    return int(x, 0)
             
 def main():
     parser = argparse.ArgumentParser(
         description="Decode a Sega Genesis VDP command (16-bit or 32-bit hex)."
     )
     parser.add_argument(
-        "commands",
+        "--cmds",
         metavar="CMD",
         type=str,
         nargs="+",
@@ -189,26 +192,25 @@ def main():
     
     parser.add_argument(
         "--dma",
-        metavar="23BIT ADDRESS",
-        type=str,
+        metavar="address_byte",
+        type=auto_int,
         nargs=3,
         help="DMA address bytes in the order: low, mid, high"
     )
     
     args = parser.parse_args()
 
-    for cmd in args.commands:
+    if args.cmds:
+        for cmd in args.cmds:
+            print("=" * 40)
+            try:
+                decode_vdp_command(cmd)
+            except Exception as e:
+                print(f"Error decoding {cmd}: {e}")
         print("=" * 40)
-        try:
-            decode_vdp_command(cmd)
-        except Exception as e:
-            print(f"Error decoding {cmd}: {e}")
-    print("=" * 40)
     if args.dma:
-        low_byte = convert_hex_string(args.dma[0])
-        mid_byte = convert_hex_string(args.dma[1])
-        high_byte = convert_hex_string(args.dma[2])
-        dma_address = extract_23bit_address(low_byte, mid_byte, high_byte)
+        dma_address = extract_23bit_address(args.dma[0], args.dma[1], args.dma[2])
+        print("=" * 40)
         print(f"DMA Source Address: ${dma_address:04X}")
         print("=" * 40)
 
