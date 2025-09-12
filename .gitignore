@@ -1,1 +1,10 @@
 Alien Soldier (J) [!].bin
+tools/ghd-prog/bin
+tools/ghd-prog/obj
+tiles/ghd/decompressed/*.bin
+tiles/rle/decompressed/*.bin
+tiles/raw/no_size/*.bin
+*.id0
+*.id1
+*.nam
+*.til
