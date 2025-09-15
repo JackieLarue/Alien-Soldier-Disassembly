@@ -133,7 +133,7 @@ def unpack_rle(reader : BufferedReader):
                         decomp_buffer.append(s)
                         decomp_buffer_cursor += 1
 
-    with open(os.path.join(DATA_FOLDER, 'rle', 'decompressed', f'tiles_{reader.tell():02X}.bin'), 'w+b') as binary_file:
+    with open(os.path.join(DATA_FOLDER, 'rle', 'decompressed', f'tiles_{addr:02X}.bin'), 'w+b') as binary_file:
         decomp_buffer.tofile(binary_file)
 
 # i am so sorry for all this atrocious ass code bro

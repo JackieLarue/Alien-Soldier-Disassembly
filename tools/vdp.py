@@ -177,7 +177,35 @@ def decode_vdp_command(command, ext_vram=False, w320_mode=False):
 
 def auto_int(x):
     return int(x, 0)
-            
+
+def norm_gen_pal(col):
+    match col >> 1:
+        case 0b000:
+            return 0x00
+        case 0b001:
+            return 0x34
+        case 0b010:
+            return 0x57
+        case 0b011:
+            return 0x74
+        case 0b100:
+            return 0x90
+        case 0b101:
+            return 0xAC
+        case 0b110:
+            return 0xCE
+        case 0b111:
+            return 0xFF        
+
+def decode_9_bit_bgr(color16: int):
+    b_shift = (color16 >> 8) & 0x0F
+    g_shift = (color16 >> 4) & 0x0F
+    r_shift = (color16 >> 0) & 0x0F
+    r = norm_gen_pal(r_shift)
+    g = norm_gen_pal(g_shift)
+    b = norm_gen_pal(b_shift)
+    return r, g, b
+
 def main():
     parser = argparse.ArgumentParser(
         description="Decode a Sega Genesis VDP command (16-bit or 32-bit hex)."
@@ -197,6 +225,14 @@ def main():
         nargs=3,
         help="DMA address bytes in the order: low, mid, high"
     )
+
+    parser.add_argument(
+        "--color",
+        metavar="colors",
+        type=auto_int,
+        nargs="+",
+        help="Takes in 9-bit BGR word, returns normalized 0-255 rgb"
+    )
     
     args = parser.parse_args()
 
@@ -208,11 +244,20 @@ def main():
             except Exception as e:
                 print(f"Error decoding {cmd}: {e}")
         print("=" * 40)
+    
     if args.dma:
         dma_address = extract_23bit_address(args.dma[0], args.dma[1], args.dma[2])
         print("=" * 40)
         print(f"DMA Source Address: ${dma_address:04X}")
         print("=" * 40)
+    
+    if args.color:
+        print("=" * 40)
+        for col in args.color:
+            r, g, b = decode_9_bit_bgr(col)
+            print(f"Genesis color 0x{col:03X} -> RGB({r}, {g}, {b})")
+        print("=" * 40)    
+
 
 if __name__ == "__main__":
     main()
