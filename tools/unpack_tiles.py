@@ -9,6 +9,7 @@ from sys import exc_info
 from traceback import format_exception
 
 DATA_FOLDER = '../tiles'
+MAPPINGS_FOLDER = '../mappings'
 DEFAULT_ROM_NAME = '../Alien Soldier (J) [!].bin'
 ADDRS_FILE = 'tile_headers.txt'
 
@@ -44,8 +45,9 @@ class TileLogger:
 
     def __init__(self):
         self.output_raw = []
-        self.output_rle = []
         self.output_ghd = []
+        self.output_map = []
+        self.output_rle = []
         self.seen_output = set()
 
     def get_id_output(self, id: int) -> list:
@@ -55,6 +57,8 @@ class TileLogger:
             case 1:
                 return self.output_ghd
             case 2:
+                return self.output_map
+            case 3:
                 return self.output_rle
             case _:
                 return self.output_raw
@@ -76,9 +80,10 @@ class TileLogger:
     def log_all(self):
         self.log_unique('tile_raw.txt', 0)
         self.log_unique('tile_ghd.txt', 1)
-        self.log_unique('tile_rle.txt', 2)
+        self.log_unique('tile_map.txt', 2)
+        self.log_unique('tile_rle.txt', 3)
 
-def unpack_rle(reader : BufferedReader):
+def unpack_rle(reader : BufferedReader, is_map=False):
     addr = reader.tell()
     decomp_buffer = array('B')
     decomp_buffer_cursor = 0
@@ -132,9 +137,12 @@ def unpack_rle(reader : BufferedReader):
                         s = read_u8(reader)
                         decomp_buffer.append(s)
                         decomp_buffer_cursor += 1
-
-    with open(os.path.join(DATA_FOLDER, 'rle', 'decompressed', f'tiles_{addr:02X}.bin'), 'w+b') as binary_file:
-        decomp_buffer.tofile(binary_file)
+    if is_map:
+        with open(os.path.join(MAPPINGS_FOLDER, 'rle', f'{addr:02X}_map.bin'), 'w+b') as binary_file:
+            decomp_buffer.tofile(binary_file)        
+    else:
+        with open(os.path.join(DATA_FOLDER, 'rle', 'decompressed', f'tiles_{addr:02X}.bin'), 'w+b') as binary_file:
+            decomp_buffer.tofile(binary_file)
 
 # i am so sorry for all this atrocious ass code bro
 def read_bits(
@@ -179,13 +187,13 @@ class ArrayStreamThing:
     buffer = array('B')
     cursor: int
     temp_cursor : int
-
+    
     def __init__(self):
         #self.buffer = array('B')
         self.buffer = [0] * 256
         self.cursor = 0
         self.temp_cursor = 0
-
+        
     def write(self, value):
         self.buffer[self.cursor] = (value >> 8) & 0xFF
         self.cursor += 1
@@ -196,14 +204,9 @@ class ArrayStreamThing:
         return (self.buffer[self.cursor] << 8) | self.buffer[self.cursor+1]
 
     def read_u16(self) -> int:
-        slice = self.buffer[self.cursor:self.cursor + 2]
+        slice = self.buffer[self.cursor_pos:self.cursor_pos + 2]
         return struct.unpack(">H", bytes(slice))[0]     
     
-    def read_u32(self) -> int:
-        slice = self.buffer[self.cursor:self.cursor + 4]
-        self.temp_cursor += 4
-        return struct.unpack(">I", bytes(slice))[0]
-
     def write_offset(self, value, offset):
         lo = (value & 0xFF)
         hi = ((value >> 8) & 0xFF)
@@ -212,8 +215,10 @@ class ArrayStreamThing:
         self.buffer[self.cursor + offset + 1] = lo
 
     def compact_to_output(self, output_data):
+        cursor_pos = 0
         for i in range(0, 32):
-            output_data.append(self.read_u32())
+            hi = self.read_u16()
+            
 
 #this shit dont work yet. figure it out
 def unpack_ghd(reader: BufferedReader):
@@ -231,8 +236,7 @@ def unpack_ghd(reader: BufferedReader):
     for i in range(0, num_decompress_steps):
         decomp_buf.cursor = 0
         while (True):
-            if (decomp_buf.cursor >= 128):
-                break
+
 			# ---- Top Prep ----
 			# Read the next data chunk of 5 bits
             data_chunk, num_valid_bits, bits_to_process = read_bits(5, num_valid_bits, bits_to_process, reader)
@@ -308,7 +312,10 @@ def unpack_ghd(reader: BufferedReader):
                         d5 = d7
                         d4 = (d5 & 0xF) # just take data nibble, clear bit 15
                     decomp_buf.write(d4)
+    
             iteration_count += 1
+            if (decomp_buf.cursor >= 128):
+                break
         decomp_buf.compact_to_output(output_data)
 
     with open(os.path.join(DATA_FOLDER, 'ghd', 'decompressed', f'tiles_{addr:02X}.bin'), 'w+b') as binary_file:
@@ -357,8 +364,12 @@ def unpack_tiles(reader: BufferedReader, log : TileLogger):
                 if logger.append_unique(offset, 1):
                     reader.seek(offset)
                     #unpack_ghd(reader)
-            case 6 | 7:
+            case 6:
                 if logger.append_unique(offset, 2):
+                    reader.seek(offset)
+                    unpack_rle(reader, True)
+            case 7:
+                if logger.append_unique(offset, 3):
                     reader.seek(offset)
                     unpack_rle(reader)
         reader.seek(saved_position)

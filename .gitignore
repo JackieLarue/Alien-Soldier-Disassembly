@@ -4,6 +4,7 @@ tools/ghd-prog/obj
 tiles/ghd/decompressed/*.bin
 tiles/rle/decompressed/*.bin
 tiles/raw/no_size/*.bin
+mappings/rle/*.bin
 *.id0
 *.id1
 *.nam
