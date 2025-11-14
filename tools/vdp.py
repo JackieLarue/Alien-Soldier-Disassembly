@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 
 def extract_23bit_address(byte0, byte1, byte2):
@@ -105,13 +107,13 @@ def vdp_reg_print(reg_num, value, ext_vram, w320_mode):
 
 def convert_hex_string(string):
     if isinstance(string, str):
-        if string.startswith("$"):
-            string = string[1:]
-        elif string.startswith("0x"):
+        #if string.startswith("$"):
+            #string = string[1:]
+        if string.startswith("0x"):
             string = string[2:]
         string_length = len(string)
-        string = int(string, 16)    
-    return string, string_length
+        number = int(string, 16)    
+    return number, string_length
 
 def decode_vdp_command(command, ext_vram=False, w320_mode=False):
     command, string_length = convert_hex_string(command)
@@ -255,7 +257,7 @@ def main():
         print("=" * 40)
         for col in args.color:
             r, g, b = decode_9_bit_bgr(col)
-            print(f"Genesis color 0x{col:03X} -> RGB({r}, {g}, {b})")
+            print(f"Genesis color 0x{col:03X} -> RGB({r:02X}{g:02X}{b:02X})")
         print("=" * 40)    
 
 
