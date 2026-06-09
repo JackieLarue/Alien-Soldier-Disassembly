@@ -396,5 +396,7 @@ if __name__ == '__main__':
             etype, value, tb = exc_info()
             info, error = format_exception(etype, value, tb)[-2:]
             print(f'Exception in:\n{info}\n{error}')
-
+    
+    rom.seek(0x1291DE)
+    unpack_rle(rom)
     logger.log_all()

@@ -166,3 +166,103 @@ Sprite flags?:
 FFFF0E - difficulty, 2 = super hard 0 = super easy
 
 Player sprites range: 0xF2826 - 0xFEB6E
+
+notes: high score screen variables
+high score
+score
+destroyed enemies
+player damage (taken)
+stage time_limit scroll_used boss_used clear_time continue
+total limit time
+total clear time
+total continue
+
+player struct 
+{
+    u16 unk0;
+    u8 unk2;
+    u8 unk3;
+    u16 pstate;
+    u8 hstate;
+    u8 vstate;
+    u16 sprite_ptr;
+    u8 unkA;
+    u8 unkB;
+    u8 unkC;
+    u8 unkD;
+    u16 dstate;
+    u16 xpos;
+    u16 xpos_sub;
+    u16 ypos;
+    u16 ypos_sub;
+    s16 xspd;
+    s16 yspd;
+    u8 unk20;
+    u8 unk21;
+    u8 unk22;
+    u8 unk23;
+    u8 unk24[0x28 - 0x24];
+    u8 unk28_y;
+    u8 unk29_y;
+    u8 unk2A_x;
+    u8 unk2B_x;
+    u8 unk2C[0x48 - 0x2C];
+    u16 unk48;
+    u16 unk4A;
+    u16 unk4C;
+    u16 unk4E;
+    u16 unk50;
+    u16 unk52;
+    u8 unk53[0x5C - 0x53];
+    u16 unk5C;
+    u16 unk5E;
+    u8 unk60[0x69 - 0x60];
+    u8 btn_dwn;
+    u8 btn_prs;
+    u8 btn_rel;
+    u8 unk6C[0x9E - 0x6C];
+    u8 fire_dir;
+    u8 unk9F[0xDA - 0x9F];
+    u16 sprite_dest;
+    u16 sprite_ptr_2;
+    u8 unkDE[0xE0 - 0xDE];
+    u16 unkE0; //another dest ptr???
+    u8 unkEC[0x200 - 0xEC]; 
+}
+
+: 8x16 jpn font
+
+F10A4: flames_projectiles_health_icon_tiles
+F276E: item_borders_arrows
+
+182F24: logo electricity/cloud border
+184378: logo electricity/cloud border and star twinkles bg
+18BE42: logo electricity/cloud border vertical?
+18C72C: big lettering? -> game over text
+18DA38: hud elements
+18DFFA: training mode hud text + weird borders
+18E36C: hud font + more
+
+1067C2: jets ripper
+1081AA: antroid
+109546: terobuster
+10B9FE: shell shogun
+112288: madame baba
+113934: joker
+114DF8: flying neo
+116C9C: xi tiger
+11A8FC: love penguin
+11B542: deep strider
+11D002: sunset stinger
+11E5E0: gusthead
+11F310: sharpsteel
+120FF8: victor
+121932: back stringer
+1233B4: epsilon1
+12453E: jampan
+124CCE: destroyer mk2
+125902: lambda bunny
+12772E: mantis
+1291DE: unused pacman boss
+130B4E: seven force
+

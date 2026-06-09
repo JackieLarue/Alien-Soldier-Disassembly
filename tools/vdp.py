@@ -138,10 +138,10 @@ def decode_vdp_command(command, ext_vram=False, w320_mode=False):
             vdp_reg_print(reg_num_h, value_h, ext_vram, w320_mode)
             vdp_reg_print(reg_num_l, value_l, ext_vram, w320_mode)
             
-            if reg_num_h == 0x93 and reg_num_l == 0x94:
+            if reg_num_h == 0x94 and reg_num_l == 0x93:
                 dma_len = value_h << 8 | value_l
                 print(f"Set DMA length to: ${dma_len:04X} (${dma_len << 1:05X} / {dma_len << 1} bytes)")
-            elif reg_num_l == 0x93 and reg_num_h == 0x94:
+            elif reg_num_l == 0x94 and reg_num_h == 0x93:
                 dma_len = value_l << 8 | value_h
                 print(f"Set DMA length to: ${dma_len:04X} (${dma_len << 1:05X} / {dma_len << 1} bytes)")
         else:
@@ -213,7 +213,7 @@ def main():
         description="Decode a Sega Genesis VDP command (16-bit or 32-bit hex)."
     )
     parser.add_argument(
-        "--cmds",
+        "--cmd",
         metavar="CMD",
         type=str,
         nargs="+",
@@ -238,13 +238,13 @@ def main():
     
     args = parser.parse_args()
 
-    if args.cmds:
-        for cmd in args.cmds:
+    if args.cmd:
+        for command in args.cmd:
             print("=" * 40)
             try:
-                decode_vdp_command(cmd)
+                decode_vdp_command(command)
             except Exception as e:
-                print(f"Error decoding {cmd}: {e}")
+                print(f"Error decoding {command}: {e}")
         print("=" * 40)
     
     if args.dma:

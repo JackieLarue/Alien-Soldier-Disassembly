@@ -1,5 +1,5 @@
 ; Attributes: thunk
-j_update_sound:                         ; CODE XREF: Reset+252   p VBLANK_update_sound+36   p
+j_update_sound:                         ; CODE XREF: Reset+252   p sound_engine_update+36   p
                 jmp     update_sound(pc)
 ; End of function j_update_sound
 j_load_z80_dac_driver:                  ; CODE XREF: Reset+246   p
