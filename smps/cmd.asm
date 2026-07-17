@@ -271,7 +271,7 @@ jfenv_end:                              ; CODE XREF: cfEF_SetFMIns+C   j jfenv0+
 ; End of function jfenv0
 ; ---------------------------------------------------------------------------
 vol_flg_tbl:    dc.b   8,  8,  8,  8, $A, $E, $E, $F ; DATA XREF: jfenv0+36   r vol_set+42   r
-vol_set:                                ; CODE XREF: fadeout_check:jump   p volume_ramp_idk+EE   p ...
+vol_set:                                ; CODE XREF: fadeout_check:jump   p fade_spc_check+EE   p ...
                 btst    #_write_protect,(a5)
                 bne.s   end
                 moveq   #0,d0
@@ -637,25 +637,25 @@ loop:                                   ; CODE XREF: cf02_TickMulAll+10   j
                 rts
 ; End of function cf02_TickMulAll
 cf03_FadeIn_On:                         ; CODE XREF: cf_tbl+92   j
-                tst.b   (byte_FFF828).w
+                tst.b   (fdspc_flg).w
                 beq.w   loc_83E42
                 addq.w  #2,a4
                 rts
 ; ---------------------------------------------------------------------------
 loc_83E42:                              ; CODE XREF: cf03_FadeIn_On+4   j
-                move.b  #1,(byte_FFF828).w
-                move.b  (byte_FFF829).w,d0
-                or.b    (byte_FFF82A).w,d0
+                move.b  #1,(fdspc_flg).w
+                move.b  (fdspc_add_fm).w,d0
+                or.b    (fdspc_add_psg).w,d0
                 bne.w   end
-                move.b  (a4)+,(byte_FFF829).w
-                move.b  (a4)+,(byte_FFF82A).w
+                move.b  (a4)+,(fdspc_add_fm).w
+                move.b  (a4)+,(fdspc_add_psg).w
 end:                                    ; CODE XREF: cf03_FadeIn_On+1A   j
                 rts
 ; End of function cf03_FadeIn_On
 cf04_FadeIn_Off:                        ; CODE XREF: cf_tbl+96   j
-                cmpi.b  #2,(byte_FFF828).w
+                cmpi.b  #2,(fdspc_flg).w
                 bne.w   end
-                move.b  #$80,(byte_FFF828).w
+                move.b  #$80,(fdspc_flg).w
 end:                                    ; CODE XREF: cf04_FadeIn_Off+6   j
                 rts
 ; End of function cf04_FadeIn_Off

@@ -10,10 +10,10 @@ dma_read_queue:                         ; CODE XREF: VBLANK+BC   p
                 move.w  #VDPR_DMASRC_L,(a0)
                 move.w  #$96F0,(a0)
                 move.w  #$977F,(a0)     ; set DMA src address to $FFE000
-                move.l  #$74000083,(VDP_DEST).w ; VRAM_WRITE at address $F400
-                move.w  (VDP_DEST).w,(a0)
-                move.w  (VDP_DEST+2).w,(a0)
-                tst.b   (CRAM_DATA_FILL_FLAG).w
+                move.l  #$74000083,(DMA_DEST_CMD).w ; VRAM_WRITE at address $F400
+                move.w  (DMA_DEST_CMD).w,(a0)
+                move.w  (DMA_DEST_CMD+2).w,(a0)
+                tst.b   (GFX_HINT_DISABLE).w
                 bne.w   no_fill
                 move.w  #AUTO_INC_2,(a0)
                 move.l  #CRAM_ADDR_CMD,(a0)
@@ -34,12 +34,12 @@ no_fill:                                ; CODE XREF: dma_read_queue+40   j
                 move.w  #$9580,(a0)
                 move.w  #$96F1,(a0)
                 move.w  #$977F,(a0)     ; set DMA src to $FFE300
-                move.l  #CRAM_DMA_CMD,(VDP_DEST).w
-                move.w  (VDP_DEST).w,(a0)
-                move.w  (VDP_DEST+2).w,(a0)
+                move.l  #CRAM_DMA_CMD,(DMA_DEST_CMD).w
+                move.w  (DMA_DEST_CMD).w,(a0)
+                move.w  (DMA_DEST_CMD+2).w,(a0)
 load_queue:                             ; CODE XREF: dma_read_queue+68   j
                 lea     (DMA_QUEUE_HEAD).w,a2
-                movea.w (DMA_QUEUE_PTR0).w,a3
+                movea.w (DMA_QUEUE_PTR_F70C).w,a3
                 cmpa.w  a2,a3
                 beq.w   skip
 cpy_loop:                               ; CODE XREF: dma_read_queue+AC   j
@@ -50,8 +50,8 @@ cpy_loop:                               ; CODE XREF: dma_read_queue+AC   j
                 move.w  (a3)+,(a0)
                 cmpa.w  a2,a3
                 bne.s   cpy_loop
-                move.w  a3,(DMA_QUEUE_PTR0).w
-                move.w  a3,(DMA_QUEUE_SRC_70E).w
+                move.w  a3,(DMA_QUEUE_PTR_F70C).w
+                move.w  a3,(DMA_QUEUE_SRC_F70E).w
 skip:                                   ; CODE XREF: dma_read_queue+9C   j
                 move.w  #AUTO_INC_2,(a0)
                 btst    #VDPR_BIT_HORZ_SCROLL,(VDP_MODE3_RAM+1).w ; check HSCR bit
@@ -65,9 +65,9 @@ h_full_scroll:                          ; CODE XREF: dma_read_queue+C8   j
                 move.w  #VDPR_DMASRC_L,(a0)
                 move.w  #$96F2,(a0)
                 move.w  #$977F,(a0)     ; set DMA src to $FFE400
-                move.l  #$70000083,(VDP_DEST).w ; VRAM write at address $F000
-                move.w  (VDP_DEST).w,(a0)
-                move.w  (VDP_DEST+2).w,(a0)
+                move.l  #$70000083,(DMA_DEST_CMD).w ; VRAM write at address $F000
+                move.w  (DMA_DEST_CMD).w,(a0)
+                move.w  (DMA_DEST_CMD+2).w,(a0)
                 move.w  #AUTO_INC_2,(a0)
                 btst    #VDPR_BIT_VERT_SCROLL,(VDP_MODE3_RAM+1).w
                 bne.s   v_tile_scroll
@@ -80,9 +80,9 @@ v_full_scroll:                          ; CODE XREF: dma_read_queue+FE   j
                 move.w  #VDPR_DMASRC_L,(a0)
                 move.w  #$96F6,(a0)
                 move.w  #$977F,(a0)     ; set DMA src to $FFEC00
-                move.l  #VSRAM_DMA_CMD,(VDP_DEST).w
-                move.w  (VDP_DEST).w,(a0)
-                move.w  (VDP_DEST+2).w,(a0)
+                move.l  #VSRAM_DMA_CMD,(DMA_DEST_CMD).w
+                move.w  (DMA_DEST_CMD).w,(a0)
+                move.w  (DMA_DEST_CMD+2).w,(a0)
 loc_E34:
                 movea.w #(dword_FF84A0-M68K_RAM),a3
                 tst.w   (a3)
@@ -130,7 +130,7 @@ end:                                    ; CODE XREF: dma_read_queue+15C   j dma_
                 clr.b   (DMA_QUEUE_STATUS).w
                 rts
 ; End of function dma_read_queue
-vdp_set_regs:                           ; CODE XREF: VBLANK+C0   p
+gfx_set_regs:                           ; CODE XREF: VBLANK+C0   p
                 lea     (VDP_CTRL).l,a0
                 move.w  (VDP_MODE2_RAM).w,(a0)
                 move.w  (VDP_PLANEA_RAM).w,(a0)
@@ -147,16 +147,16 @@ vdp_set_regs:                           ; CODE XREF: VBLANK+C0   p
                 move.w  (VDP_WINX_RAM).w,(a0)
                 move.w  (VDP_WINY_RAM).w,(a0)
                 rts
-; End of function vdp_set_regs
-vdp_set_mode1_reg:                      ; CODE XREF: VBLANK+48   p
+; End of function gfx_set_regs
+gfx_update_hint_bit:                    ; CODE XREF: VBLANK+48   p
                 move.w  (VDP_MODE1_RAM).w,d0
-                tst.b   (CRAM_DATA_FILL_FLAG).w
+                tst.b   (GFX_HINT_DISABLE).w
                 bne.w   vdp_write
                 bclr    #4,d0           ; disable horizontal interupts
-vdp_write:                              ; CODE XREF: vdp_set_mode1_reg+8   j
+vdp_write:                              ; CODE XREF: gfx_update_hint_bit+8   j
                 move.w  d0,(VDP_CTRL).l
                 rts
-; End of function vdp_set_mode1_reg
+; End of function gfx_update_hint_bit
 _gfx_palette_fade:
                 tst.b   (CRTL_FLAG).w
                 bpl.w   continue
@@ -264,7 +264,7 @@ loc_FE8:                                ; CODE XREF: gfx_pal_fade_out_mirror+52 
                 move.w  #$1000,(GFX_PAL_FADE_SPD).w
                 clr.w   (GFX_PAL_FADE_MODE).w
                 bclr    #VDPR_BIT_DISPLAY_OR_FILL,(VDP_MODE2_RAM+1).w ; fill display with background color
-                clr.b   (CRAM_DATA_FILL_FLAG).w
+                clr.b   (GFX_HINT_DISABLE).w
 end:                                    ; CODE XREF: gfx_pal_fade_out_mirror+70   j
                 rts
 ; End of function gfx_pal_fade_out_mirror
@@ -313,7 +313,7 @@ loc_106A:                               ; CODE XREF: gfx_pal_fade_out_continue+4
                 move.w  #$1000,(GFX_PAL_FADE_SPD).w
                 clr.w   (GFX_PAL_FADE_MODE).w
                 bclr    #VDPR_BIT_DISPLAY_OR_FILL,(VDP_MODE2_RAM+1).w ; fill display with background color
-                clr.b   (CRAM_DATA_FILL_FLAG).w
+                clr.b   (GFX_HINT_DISABLE).w
 end:                                    ; CODE XREF: gfx_pal_fade_out_continue+66   j
                 rts
 ; End of function gfx_pal_fade_out_continue
@@ -414,7 +414,7 @@ loc_1182:                               ; CODE XREF: gfx_pal_fade_in_mirror+5C  
                 move.w  #$1000,(GFX_PAL_FADE_SPD).w
                 clr.w   (GFX_PAL_FADE_MODE).w
                 bclr    #VDPR_BIT_DISPLAY_OR_FILL,(VDP_MODE2_RAM+1).w
-                clr.b   (CRAM_DATA_FILL_FLAG).w
+                clr.b   (GFX_HINT_DISABLE).w
 end:                                    ; CODE XREF: gfx_pal_fade_in_mirror+76   j
                 rts
 ; End of function gfx_pal_fade_in_mirror
@@ -438,19 +438,19 @@ loop:                                   ; CODE XREF: gfx_pal_fade_in_continue+62
                 andi.w  #$F00,d4
                 add.w   d5,d2
                 cmpi.w  #$F,d2
-                bls.w   loc_11EE
+                bls.w   jump0
                 move.w  #$F,d2
-loc_11EE:                               ; CODE XREF: gfx_pal_fade_in_continue+38   j
+jump0:                                  ; CODE XREF: gfx_pal_fade_in_continue+38   j
                 add.w   d6,d3
                 cmpi.w  #$F0,d3
-                bls.w   loc_11FC
+                bls.w   jump1
                 move.w  #$F0,d3
-loc_11FC:                               ; CODE XREF: gfx_pal_fade_in_continue+46   j
+jump1:                                  ; CODE XREF: gfx_pal_fade_in_continue+46   j
                 add.w   d7,d4
                 cmpi.w  #$F00,d4
-                bls.w   loc_120A
+                bls.w   jump2
                 move.w  #$F00,d4
-loc_120A:                               ; CODE XREF: gfx_pal_fade_in_continue+54   j
+jump2:                                  ; CODE XREF: gfx_pal_fade_in_continue+54   j
                 or.w    d3,d2
                 or.w    d4,d2
                 move.w  d2,(a0)+
@@ -460,14 +460,15 @@ loc_120A:                               ; CODE XREF: gfx_pal_fade_in_continue+54
                 move.w  #$1000,(GFX_PAL_FADE_SPD).w
                 clr.w   (GFX_PAL_FADE_MODE).w
                 bclr    #6,(VDP_MODE2_RAM+1).w
-                clr.b   (CRAM_DATA_FILL_FLAG).w
+                clr.b   (GFX_HINT_DISABLE).w
 end:                                    ; CODE XREF: gfx_pal_fade_in_continue+6C   j
                 rts
 ; End of function gfx_pal_fade_in_continue
-_dma_queue_prepend_1234:
-                movea.w (DMA_QUEUE_PTR0).w,a0
-                move.l  #$70000083,-(a0)
-                move.l  (_DMA_VSRAM_SRC0).w,d0
+_dma_queue_prepend_hscroll:
+                movea.w (DMA_QUEUE_PTR_F70C).w,a0
+                move.l  #$70000083,-(a0) ; DO_WRITE_TO_VRAM_AT_$F000_ADDR
+                                        ; DO_OPERATION_USING_DMA
+                move.l  (_DMA_HSCROLL_SRC).w,d0
                 andi.l  #$FFFFFF,d0
                 lsr.l   #1,d0
                 move.w  #VDPR_DMASRC_L,d1
@@ -483,20 +484,21 @@ _dma_queue_prepend_1234:
                 move.w  d1,-(a0)
                 move.w  #AUTO_INC_2,-(a0)
                 btst    #1,(VDP_MODE3_RAM+1).w
-                bne.w   loc_127E
-                move.l  #$94009302,-(a0) ; DMA len set to $200($400 bytes)
-                bra.w   loc_1284
+                bne.w   tile_or_line_scroll
+                move.l  #$94009302,-(a0) ; DMA len set to $2(4 bytes)
+                bra.w   end
 ; ---------------------------------------------------------------------------
-loc_127E:                               ; CODE XREF: _dma_queue_prepend_1234+3C   j
-                move.l  #$940193C0,-(a0) ; DMA len set to $C001 ($18002 bytes)
-loc_1284:                               ; CODE XREF: _dma_queue_prepend_1234+46   j
-                move.w  a0,(DMA_QUEUE_PTR0).w
+tile_or_line_scroll:                    ; CODE XREF: _dma_queue_prepend_hscroll+3C   j
+                move.l  #$940193C0,-(a0) ; DMA len set to $1C0 (896 bytes)
+end:                                    ; CODE XREF: _dma_queue_prepend_hscroll+46   j
+                move.w  a0,(DMA_QUEUE_PTR_F70C).w
                 rts
-; End of function _dma_queue_prepend_1234
-_dma_queue_prepend_128A:
-                movea.w (DMA_QUEUE_PTR0).w,a0
-                move.l  #$40000090,-(a0)
-                move.l  (_DMA_VSRAM_SRC1).w,d0
+; End of function _dma_queue_prepend_hscroll
+_dma_queue_prepend_vscroll:
+                movea.w (DMA_QUEUE_PTR_F70C).w,a0
+                move.l  #$40000090,-(a0) ; DO_WRITE_TO_VSRAM_AT_$0000_ADDR
+                                        ; DO_OPERATION_USING_DMA
+                move.l  (_DMA_VSCROLL_SRC).w,d0
                 andi.l  #$FFFFFF,d0
                 lsr.l   #1,d0
                 move.w  #VDPR_DMASRC_L,d1
@@ -512,98 +514,98 @@ _dma_queue_prepend_128A:
                 move.w  d1,-(a0)
                 move.w  #AUTO_INC_2,-(a0)
                 btst    #2,(VDP_MODE3_RAM+1).w
-                bne.w   loc_12D4
-                move.l  #$94009302,-(a0) ; set DMA len to $200 (1024 bytes)
-                bra.w   loc_12DA
+                bne.w   column_scroll
+                move.l  #$94009302,-(a0) ; set DMA len to $2 (4 bytes)
+                bra.w   end
 ; ---------------------------------------------------------------------------
-loc_12D4:                               ; CODE XREF: _dma_queue_prepend_128A+3C   j
-                move.l  #$94009328,-(a0) ; DMA len set to $2800($5000 bytes)
-loc_12DA:                               ; CODE XREF: _dma_queue_prepend_128A+46   j
-                move.w  a0,(DMA_QUEUE_PTR0).w
+column_scroll:                          ; CODE XREF: _dma_queue_prepend_vscroll+3C   j
+                move.l  #$94009328,-(a0) ; DMA len set to $28 (80 bytes)
+end:                                    ; CODE XREF: _dma_queue_prepend_vscroll+46   j
+                move.w  a0,(DMA_QUEUE_PTR_F70C).w
                 rts
-; End of function _dma_queue_prepend_128A
-set_vdp_reg_m2_bgcol_ram_clear:         ; CODE XREF: gamemode_play_stage+230   j
-                tst.b   (vdp_byte_FFF746).w
+; End of function _dma_queue_prepend_vscroll
+gfx_clear_bg_color:                     ; CODE XREF: gamemode_play_stage+230   j
+                tst.b   (GFX_CTRL_FLAG_746).w
                 bpl.w   end
                 move.w  (VDP_MODE2_RAM).w,d0
                 bclr    #VDPR_BIT_DISPLAY_OR_FILL,d0
                 move.w  d0,(VDP_CTRL).l
                 move.w  #$F,d0
-col_clear:                              ; CODE XREF: set_vdp_reg_m2_bgcol_ram_clear+26   j
+col_clear:                              ; CODE XREF: gfx_clear_bg_color+26   j
                 move.w  d0,d1
                 ori.w   #VDPR_BGCOL,d1
                 move.w  d1,(VDP_CTRL).l
                 dbf     d0,col_clear
                 move.w  (VDP_MODE2_RAM).w,(VDP_CTRL).l
                 move.w  (VDP_BGCOL_RAM).w,(VDP_CTRL).l
-end:                                    ; CODE XREF: set_vdp_reg_m2_bgcol_ram_clear+4   j
+end:                                    ; CODE XREF: gfx_clear_bg_color+4   j
                 rts
-; End of function set_vdp_reg_m2_bgcol_ram_clear
-set_vdp_reg_m2_bgcol_clear_ram:
-                tst.b   (vdp_byte_FFF746).w
+; End of function gfx_clear_bg_color
+gfx_disable_display:
+                tst.b   (GFX_CTRL_FLAG_746).w
                 bpl.w   end
                 move.w  (VDP_MODE2_RAM).w,d0
                 bclr    #VDPR_BIT_DISPLAY_OR_FILL,d0
                 move.w  d0,(VDP_CTRL).l
                 move.w  #VDPR_BGCOL,(VDP_CTRL).l
-end:                                    ; CODE XREF: set_vdp_reg_m2_bgcol_clear_ram+4   j
+end:                                    ; CODE XREF: gfx_disable_display+4   j
                 rts
-; End of function set_vdp_reg_m2_bgcol_clear_ram
-set_vdp_reg_m2_bgcol_ram:
-                tst.b   (vdp_byte_FFF746).w
+; End of function gfx_disable_display
+gfx_enable_display:
+                tst.b   (GFX_CTRL_FLAG_746).w
                 bpl.w   end
                 move.w  (VDP_MODE2_RAM).w,(VDP_CTRL).l
                 move.w  (VDP_BGCOL_RAM).w,(VDP_CTRL).l
-end:                                    ; CODE XREF: set_vdp_reg_m2_bgcol_ram+4   j
+end:                                    ; CODE XREF: gfx_enable_display+4   j
                 rts
-; End of function set_vdp_reg_m2_bgcol_ram
-hblank_update:                          ; CODE XREF: VBLANK:ntsc   p
-                move.w  (HBLANK_FX_ID).w,d0
+; End of function gfx_enable_display
+gfx_raster_load:                        ; CODE XREF: VBLANK:ntsc   p
+                move.w  (GFX_RASTER_FX_ID).w,d0
                 movea.l jpt_135E(pc,d0.w),a0
                 jmp     (a0)            ; switch 23 cases
-; End of function hblank_update
+; End of function gfx_raster_load
 ; ---------------------------------------------------------------------------
-jpt_135E:       dc.l hblank_fx_0x0_0x14_0x1C ; DATA XREF: hblank_update+4   o
-                dc.l hblank_fx_0x4      ; jump table for switch statement
-                dc.l hblank_fx_0x8
-                dc.l hblank_fx_0xC
-                dc.l hblank_fx_0x10
-                dc.l hblank_fx_0x0_0x14_0x1C
-                dc.l hblank_fx_0x18
-                dc.l hblank_fx_0x0_0x14_0x1C
-                dc.l hblank_fx_0x20
-                dc.l hblank_fx_0x24
-                dc.l hblank_fx_0x28
-                dc.l hblank_fx_0x2C
-                dc.l hblank_fx_0x30_0x38
-                dc.l hblank_fx_0x34
-                dc.l hblank_fx_0x30_0x38
-                dc.l hblank_fx_0x3C
-                dc.l hblank_fx_0x40
-                dc.l hblank_fx_0x44
-                dc.l hblank_fx_0x48
-                dc.l hblank_fx_0x4C
-                dc.l hblank_fx_0x50
-                dc.l hblank_fx_0x54
-                dc.l hblank_fx_0x58
+jpt_135E:       dc.l raster_fx_0x0_0x14_0x1C ; DATA XREF: gfx_raster_load+4   o
+                dc.l raster_fx_0x4      ; jump table for switch statement
+                dc.l raster_fx_0x8
+                dc.l raster_fx_0xC
+                dc.l raster_fx_0x10
+                dc.l raster_fx_0x0_0x14_0x1C
+                dc.l raster_fx_0x18
+                dc.l raster_fx_0x0_0x14_0x1C
+                dc.l raster_fx_0x20
+                dc.l raster_fx_0x24
+                dc.l raster_fx_0x28
+                dc.l raster_fx_0x2C
+                dc.l raster_fx_0x30_0x38
+                dc.l raster_fx_0x34
+                dc.l raster_fx_0x30_0x38
+                dc.l raster_fx_0x3C
+                dc.l raster_fx_0x40
+                dc.l raster_fx_0x44
+                dc.l raster_fx_0x48
+                dc.l raster_fx_0x4C
+                dc.l raster_fx_0x50
+                dc.l raster_fx_0x54
+                dc.l raster_fx_0x58_seven_force
 ; jumptable 0000135E cases 0,5,7
-hblank_fx_0x0_0x14_0x1C:                ; CODE XREF: hblank_update+8   j
+raster_fx_0x0_0x14_0x1C:                ; CODE XREF: gfx_raster_load+8   j
                                         ; DATA XREF: ROM:jpt_135E   o
-                move.w  (GFX_HBLANK_INIT_FLAG_IDK).w,d0
+                move.w  (GFX_RASTER_FX_FLAG).w,d0
                 bne.w   end
-                addq.w  #4,(GFX_HBLANK_INIT_FLAG_IDK).w
+                addq.w  #4,(GFX_RASTER_FX_FLAG).w
                 andi.b  #$EF,(VDP_MODE1_RAM+1).w
                 move.w  (VDP_MODE1_RAM).w,(VDP_CTRL).l
                 move.w  #$4E73,(word_FFEE00).w
-end:                                    ; CODE XREF: hblank_fx_0x0_0x14_0x1C+4   j
+end:                                    ; CODE XREF: raster_fx_0x0_0x14_0x1C+4   j
                 rts
-; End of function hblank_fx_0x0_0x14_0x1C
+; End of function raster_fx_0x0_0x14_0x1C
 ; jumptable 0000135E case 15
-hblank_fx_0x3C:                         ; CODE XREF: hblank_update+8   j
+raster_fx_0x3C:                         ; CODE XREF: gfx_raster_load+8   j
                                         ; DATA XREF: ROM:jpt_135E   o
-                move.w  (GFX_HBLANK_INIT_FLAG_IDK).w,d0
+                move.w  (GFX_RASTER_FX_FLAG).w,d0
                 bne.w   end
-                addq.w  #4,(GFX_HBLANK_INIT_FLAG_IDK).w
+                addq.w  #4,(GFX_RASTER_FX_FLAG).w
                 move.b  #0,(VDP_HRATE_RAM+1).w
                 move.w  (VDP_HRATE_RAM).w,(VDP_CTRL).l
                 lea     stru_1418(pc),a0
@@ -611,12 +613,12 @@ hblank_fx_0x3C:                         ; CODE XREF: hblank_update+8   j
                 jsr     (gfx_read_data).l
                 ori.b   #$10,(VDP_MODE1_RAM+1).w
                 move.w  (VDP_MODE1_RAM).w,(VDP_CTRL).l
-end:                                    ; CODE XREF: hblank_fx_0x3C+4   j
+end:                                    ; CODE XREF: raster_fx_0x3C+4   j
                 lea     (word_FF9E00).w,a6
                 rts
-; End of function hblank_fx_0x3C
+; End of function raster_fx_0x3C
 ; ---------------------------------------------------------------------------
-stru_1418:      dc.w T_CPY_RAM          ; type ; DATA XREF: hblank_fx_0x3C+1A   o hblank_fx_0x20+1A   o ...
+stru_1418:      dc.w T_CPY_RAM          ; type ; DATA XREF: raster_fx_0x3C+1A   o raster_fx_0x20+1A   o ...
                 dc.l word_1422          ; src
                 dc.w $EE00              ; dest
                 dc.w $FFFF
@@ -627,61 +629,61 @@ set_vsram_data_a6:
                 rte
 ; End of function set_vsram_data_a6
 ; jumptable 0000135E case 8
-hblank_fx_0x20:                         ; CODE XREF: hblank_update+8   j
+raster_fx_0x20:                         ; CODE XREF: gfx_raster_load+8   j
                                         ; DATA XREF: ROM:jpt_135E   o
-                move.w  (GFX_HBLANK_INIT_FLAG_IDK).w,d0
+                move.w  (GFX_RASTER_FX_FLAG).w,d0
                 bne.w   end
-                addq.w  #4,(GFX_HBLANK_INIT_FLAG_IDK).w
+                addq.w  #4,(GFX_RASTER_FX_FLAG).w
                 move.b  #1,(VDP_HRATE_RAM+1).w
                 move.w  (VDP_HRATE_RAM).w,(VDP_CTRL).l
                 lea     stru_1418(pc),a0
                 jsr     (gfx_read_data).l
                 ori.b   #$10,(VDP_MODE1_RAM+1).w
                 move.w  (VDP_MODE1_RAM).w,(VDP_CTRL).l
-end:                                    ; CODE XREF: hblank_fx_0x20+4   j
+end:                                    ; CODE XREF: raster_fx_0x20+4   j
                 move.w  (VDP_MODE1_RAM).w,(VDP_CTRL).l
                 move.w  (VDP_HRATE_RAM).w,(VDP_CTRL).l
                 lea     (word_FF9E00).w,a6
                 rts
-; End of function hblank_fx_0x20
+; End of function raster_fx_0x20
 ; jumptable 0000135E case 11
-hblank_fx_0x2C:                         ; CODE XREF: hblank_update+8   j
+raster_fx_0x2C:                         ; CODE XREF: gfx_raster_load+8   j
                                         ; DATA XREF: ROM:jpt_135E   o
-                move.w  (GFX_HBLANK_INIT_FLAG_IDK).w,d0
+                move.w  (GFX_RASTER_FX_FLAG).w,d0
                 bne.w   end
-                addq.w  #4,(GFX_HBLANK_INIT_FLAG_IDK).w
+                addq.w  #4,(GFX_RASTER_FX_FLAG).w
                 move.b  #7,(VDP_HRATE_RAM+1).w
                 move.w  (VDP_HRATE_RAM).w,(VDP_CTRL).l
                 lea     stru_1418(pc),a0
                 jsr     (gfx_read_data).l
                 ori.b   #$10,(VDP_MODE1_RAM+1).w
                 move.w  (VDP_MODE1_RAM).w,(VDP_CTRL).l
-end:                                    ; CODE XREF: hblank_fx_0x2C+4   j
+end:                                    ; CODE XREF: raster_fx_0x2C+4   j
                 lea     (word_FF9E00).w,a6
                 rts
-; End of function hblank_fx_0x2C
+; End of function raster_fx_0x2C
 ; jumptable 0000135E case 2
-hblank_fx_0x8:                          ; CODE XREF: hblank_update+8   j
+raster_fx_0x8:                          ; CODE XREF: gfx_raster_load+8   j
                                         ; DATA XREF: ROM:jpt_135E   o
-                move.w  (GFX_HBLANK_INIT_FLAG_IDK).w,d0
+                move.w  (GFX_RASTER_FX_FLAG).w,d0
                 bne.w   end
-                addq.w  #4,(GFX_HBLANK_INIT_FLAG_IDK).w
+                addq.w  #4,(GFX_RASTER_FX_FLAG).w
                 move.b  #7,(VDP_HRATE_RAM+1).w
                 move.w  (VDP_HRATE_RAM).w,(VDP_CTRL).l
                 lea     stru_1418(pc),a0
                 jsr     (gfx_read_data).l
                 ori.b   #$10,(VDP_MODE1_RAM+1).w
                 move.w  (VDP_MODE1_RAM).w,(VDP_CTRL).l
-end:                                    ; CODE XREF: hblank_fx_0x8+4   j
+end:                                    ; CODE XREF: raster_fx_0x8+4   j
                 lea     (word_FF9FC0).w,a6
                 rts
-; End of function hblank_fx_0x8
+; End of function raster_fx_0x8
 ; jumptable 0000135E case 3
-hblank_fx_0xC:                          ; CODE XREF: hblank_update+8   j
+raster_fx_0xC:                          ; CODE XREF: gfx_raster_load+8   j
                                         ; DATA XREF: ROM:jpt_135E   o
-                move.w  (GFX_HBLANK_INIT_FLAG_IDK).w,d0
+                move.w  (GFX_RASTER_FX_FLAG).w,d0
                 bne.w   end
-                addq.w  #4,(GFX_HBLANK_INIT_FLAG_IDK).w
+                addq.w  #4,(GFX_RASTER_FX_FLAG).w
                 move.b  #0,(VDP_HRATE_RAM+1).w
                 move.w  (VDP_HRATE_RAM).w,(VDP_CTRL).l
                 lea     stru_1528(pc),a0
@@ -689,12 +691,12 @@ hblank_fx_0xC:                          ; CODE XREF: hblank_update+8   j
                 jsr     (gfx_read_data).l
                 ori.b   #$10,(VDP_MODE1_RAM+1).w
                 move.w  (VDP_MODE1_RAM).w,(VDP_CTRL).l
-end:                                    ; CODE XREF: hblank_fx_0xC+4   j
+end:                                    ; CODE XREF: raster_fx_0xC+4   j
                 lea     (word_FF9E00).w,a6
                 rts
-; End of function hblank_fx_0xC
+; End of function raster_fx_0xC
 ; ---------------------------------------------------------------------------
-stru_1528:      dc.w T_CPY_RAM          ; type ; DATA XREF: hblank_fx_0xC+1A   o hblank_fx_0x10+1A   o ...
+stru_1528:      dc.w T_CPY_RAM          ; type ; DATA XREF: raster_fx_0xC+1A   o raster_fx_0x10+1A   o ...
                 dc.l word_1532          ; src
                 dc.w $EE00              ; dest
                 dc.w $FFFF
@@ -706,27 +708,27 @@ set_vsram_data_0002_a6:
                 rte
 ; End of function set_vsram_data_0002_a6
 ; jumptable 0000135E case 9
-hblank_fx_0x24:                         ; CODE XREF: hblank_update+8   j
+raster_fx_0x24:                         ; CODE XREF: gfx_raster_load+8   j
                                         ; DATA XREF: ROM:jpt_135E   o
-                move.w  (GFX_HBLANK_INIT_FLAG_IDK).w,d0
+                move.w  (GFX_RASTER_FX_FLAG).w,d0
                 bne.s   end
-                addq.w  #4,(GFX_HBLANK_INIT_FLAG_IDK).w
+                addq.w  #4,(GFX_RASTER_FX_FLAG).w
                 move.w  (VDP_HRATE_RAM).w,(VDP_CTRL).l
                 lea     stru_1594(pc),a0
                 nop
                 jsr     (gfx_read_data).l
                 ori.b   #$10,(VDP_MODE1_RAM+1).w
                 move.w  (VDP_MODE1_RAM).w,(VDP_CTRL).l
-end:                                    ; CODE XREF: hblank_fx_0x24+4   j
+end:                                    ; CODE XREF: raster_fx_0x24+4   j
                 move.l  #$40020010,(VDP_CTRL).l ; DO_WRITE_TO_VSRAM_AT_$0002_ADDR
                                         ; DO_OPERATION_WITHOUT_DMA
                 move.w  (word_FFEC04).w,(VDP_DATA).l
-                move.b  (byte_FFC66B).w,(VDP_HRATE_RAM+1).w
+                move.b  (OBJECT_BUFFER1.unk4A+1).w,(VDP_HRATE_RAM+1).w
                 move.w  (VDP_HRATE_RAM).w,(VDP_CTRL).l
                 rts
-; End of function hblank_fx_0x24
+; End of function raster_fx_0x24
 ; ---------------------------------------------------------------------------
-stru_1594:      dc.w T_CPY_RAM          ; type ; DATA XREF: hblank_fx_0x24+12   o
+stru_1594:      dc.w T_CPY_RAM          ; type ; DATA XREF: raster_fx_0x24+12   o
                 dc.l word_159E          ; src
                 dc.w $EE00              ; dest
                 dc.w $FFFF
@@ -739,75 +741,75 @@ sub_15A0:
                 rte
 ; End of function sub_15A0
 ; jumptable 0000135E case 4
-hblank_fx_0x10:                         ; CODE XREF: hblank_update+8   j
+raster_fx_0x10:                         ; CODE XREF: gfx_raster_load+8   j
                                         ; DATA XREF: ROM:jpt_135E   o
-                move.w  (GFX_HBLANK_INIT_FLAG_IDK).w,d0
+                move.w  (GFX_RASTER_FX_FLAG).w,d0
                 bne.w   end
-                addq.w  #4,(GFX_HBLANK_INIT_FLAG_IDK).w
+                addq.w  #4,(GFX_RASTER_FX_FLAG).w
                 move.b  #1,(VDP_HRATE_RAM+1).w
                 move.w  (VDP_HRATE_RAM).w,(VDP_CTRL).l
                 lea     stru_1528(pc),a0
                 jsr     (gfx_read_data).l
                 ori.b   #$10,(VDP_MODE1_RAM+1).w
                 move.w  (VDP_MODE1_RAM).w,(VDP_CTRL).l
-end:                                    ; CODE XREF: hblank_fx_0x10+4   j
+end:                                    ; CODE XREF: raster_fx_0x10+4   j
                 lea     (word_FF9E00).w,a6
                 rts
-; End of function hblank_fx_0x10
+; End of function raster_fx_0x10
 ; jumptable 0000135E case 1
-hblank_fx_0x4:                          ; CODE XREF: hblank_update+8   j
+raster_fx_0x4:                          ; CODE XREF: gfx_raster_load+8   j
                                         ; DATA XREF: ROM:jpt_135E   o
-                move.w  (GFX_HBLANK_INIT_FLAG_IDK).w,d0
+                move.w  (GFX_RASTER_FX_FLAG).w,d0
                 bne.w   end
-                addq.w  #4,(GFX_HBLANK_INIT_FLAG_IDK).w
+                addq.w  #4,(GFX_RASTER_FX_FLAG).w
                 move.b  #3,(VDP_HRATE_RAM+1).w
                 move.w  (VDP_HRATE_RAM).w,(VDP_CTRL).l
                 lea     stru_1528(pc),a0
                 jsr     (gfx_read_data).l
                 ori.b   #$10,(VDP_MODE1_RAM+1).w
                 move.w  (VDP_MODE1_RAM).w,(VDP_CTRL).l
-end:                                    ; CODE XREF: hblank_fx_0x4+4   j
+end:                                    ; CODE XREF: raster_fx_0x4+4   j
                 lea     (word_FF9E00).w,a6
                 rts
-; End of function hblank_fx_0x4
+; End of function raster_fx_0x4
 ; jumptable 0000135E case 10
-hblank_fx_0x28:                         ; CODE XREF: hblank_update+8   j
+raster_fx_0x28:                         ; CODE XREF: gfx_raster_load+8   j
                                         ; DATA XREF: ROM:jpt_135E   o
-                move.w  (GFX_HBLANK_INIT_FLAG_IDK).w,d0
+                move.w  (GFX_RASTER_FX_FLAG).w,d0
                 bne.s   end
-                addq.w  #4,(GFX_HBLANK_INIT_FLAG_IDK).w
+                addq.w  #4,(GFX_RASTER_FX_FLAG).w
                 move.b  #7,(VDP_HRATE_RAM+1).w
                 move.w  (VDP_HRATE_RAM).w,(VDP_CTRL).l
                 lea     stru_1528(pc),a0
                 jsr     (gfx_read_data).l
                 ori.b   #$10,(VDP_MODE1_RAM+1).w
                 move.w  (VDP_MODE1_RAM).w,(VDP_CTRL).l
-end:                                    ; CODE XREF: hblank_fx_0x28+4   j
+end:                                    ; CODE XREF: raster_fx_0x28+4   j
                 lea     (word_FF9E00).w,a6
                 rts
-; End of function hblank_fx_0x28
+; End of function raster_fx_0x28
 ; jumptable 0000135E case 13
-hblank_fx_0x34:                         ; CODE XREF: hblank_update+8   j
+raster_fx_0x34:                         ; CODE XREF: gfx_raster_load+8   j
                                         ; DATA XREF: ROM:jpt_135E   o
-                move.w  (GFX_HBLANK_INIT_FLAG_IDK).w,d0
+                move.w  (GFX_RASTER_FX_FLAG).w,d0
                 bne.w   end
-                addq.w  #4,(GFX_HBLANK_INIT_FLAG_IDK).w
+                addq.w  #4,(GFX_RASTER_FX_FLAG).w
                 move.b  #1,(VDP_HRATE_RAM+1).w
                 move.w  (VDP_HRATE_RAM).w,(VDP_CTRL).l
                 lea     stru_1418(pc),a0
                 jsr     (gfx_read_data).l
                 ori.b   #$10,(VDP_MODE1_RAM+1).w
                 move.w  (VDP_MODE1_RAM).w,(VDP_CTRL).l
-end:                                    ; CODE XREF: hblank_fx_0x34+4   j
+end:                                    ; CODE XREF: raster_fx_0x34+4   j
                 lea     (word_FF9C00).w,a6
                 rts
-; End of function hblank_fx_0x34
+; End of function raster_fx_0x34
 ; jumptable 0000135E case 17
-hblank_fx_0x44:                         ; CODE XREF: hblank_update+8   j
+raster_fx_0x44:                         ; CODE XREF: gfx_raster_load+8   j
                                         ; DATA XREF: ROM:jpt_135E   o
-                move.w  (GFX_HBLANK_INIT_FLAG_IDK).w,d0
+                move.w  (GFX_RASTER_FX_FLAG).w,d0
                 bne.w   end
-                addq.w  #4,(GFX_HBLANK_INIT_FLAG_IDK).w
+                addq.w  #4,(GFX_RASTER_FX_FLAG).w
                 move.b  #$C0,(VDP_HRATE_RAM+1).w
                 move.w  (VDP_HRATE_RAM).w,(VDP_CTRL).l
                 lea     stru_16E6(pc),a0
@@ -816,13 +818,13 @@ hblank_fx_0x44:                         ; CODE XREF: hblank_update+8   j
                 ori.b   #$10,(VDP_MODE1_RAM+1).w
                 move.w  (VDP_MODE1_RAM).w,(VDP_CTRL).l
                 move.w  (VDP_WINY_RAM).w,(VDP_CTRL).l
-end:                                    ; CODE XREF: hblank_fx_0x44+4   j
+end:                                    ; CODE XREF: raster_fx_0x44+4   j
                 move.w  (VDP_PLANEA_RAM).w,(VDP_CTRL).l
                 lea     (VDP_CTRL).l,a6
                 rts
-; End of function hblank_fx_0x44
+; End of function raster_fx_0x44
 ; ---------------------------------------------------------------------------
-stru_16E6:      dc.w T_CPY_RAM          ; type ; DATA XREF: hblank_fx_0x44+1A   o
+stru_16E6:      dc.w T_CPY_RAM          ; type ; DATA XREF: raster_fx_0x44+1A   o
                 dc.l word_16F0          ; src
                 dc.w $EE00              ; dest
                 dc.w $FFFF
@@ -842,11 +844,11 @@ end:                                    ; CODE XREF: sub_16F2+30   j
                 rte
 ; End of function sub_16F2
 ; jumptable 0000135E case 19
-hblank_fx_0x4C:                         ; CODE XREF: hblank_update+8   j
+raster_fx_0x4C:                         ; CODE XREF: gfx_raster_load+8   j
                                         ; DATA XREF: ROM:jpt_135E   o
-                move.w  (GFX_HBLANK_INIT_FLAG_IDK).w,d0
+                move.w  (GFX_RASTER_FX_FLAG).w,d0
                 bne.w   end
-                addq.w  #4,(GFX_HBLANK_INIT_FLAG_IDK).w
+                addq.w  #4,(GFX_RASTER_FX_FLAG).w
                 move.b  #1,(VDP_HRATE_RAM+1).w
                 move.w  (VDP_HRATE_RAM).w,(VDP_CTRL).l
                 lea     stru_1764(pc),a0
@@ -854,12 +856,12 @@ hblank_fx_0x4C:                         ; CODE XREF: hblank_update+8   j
                 jsr     (gfx_read_data).l
                 ori.b   #$10,(VDP_MODE1_RAM+1).w
                 move.w  (VDP_MODE1_RAM).w,(VDP_CTRL).l
-end:                                    ; CODE XREF: hblank_fx_0x4C+4   j
+end:                                    ; CODE XREF: raster_fx_0x4C+4   j
                 movea.w #(word_FF9C04-M68K_RAM),a6
                 rts
-; End of function hblank_fx_0x4C
+; End of function raster_fx_0x4C
 ; ---------------------------------------------------------------------------
-stru_1764:      dc.w T_CPY_RAM          ; type ; DATA XREF: hblank_fx_0x4C+1A   o
+stru_1764:      dc.w T_CPY_RAM          ; type ; DATA XREF: raster_fx_0x4C+1A   o
                 dc.l word_176E          ; src
                 dc.w $EE00              ; dest
                 dc.w $FFFF
@@ -870,11 +872,11 @@ sub_1770:
                 rte
 ; End of function sub_1770
 ; jumptable 0000135E cases 12,14
-hblank_fx_0x30_0x38:                    ; CODE XREF: hblank_update+8   j
+raster_fx_0x30_0x38:                    ; CODE XREF: gfx_raster_load+8   j
                                         ; DATA XREF: ROM:jpt_135E   o
-                move.w  (GFX_HBLANK_INIT_FLAG_IDK).w,d0
+                move.w  (GFX_RASTER_FX_FLAG).w,d0
                 bne.w   jump
-                addq.w  #4,(GFX_HBLANK_INIT_FLAG_IDK).w
+                addq.w  #4,(GFX_RASTER_FX_FLAG).w
                 move.b  #$C8,(VDP_HRATE_RAM+1).w
                 move.w  (VDP_HRATE_RAM).w,(VDP_CTRL).l
                 lea     stru_183C(pc),a0
@@ -882,7 +884,7 @@ hblank_fx_0x30_0x38:                    ; CODE XREF: hblank_update+8   j
                 jsr     (gfx_read_data).l
                 ori.b   #$10,(VDP_MODE1_RAM+1).w
                 move.w  (VDP_MODE1_RAM).w,(VDP_CTRL).l
-jump:                                   ; CODE XREF: hblank_fx_0x30_0x38+4   j
+jump:                                   ; CODE XREF: raster_fx_0x30_0x38+4   j
                 move.w  (VDP_PLANEA_RAM).w,(VDP_CTRL).l
                 move.w  (VDP_PLANEB_RAM).w,(VDP_CTRL).l
                 move.w  (VDP_BGCOL_RAM).w,(VDP_CTRL).l
@@ -891,28 +893,28 @@ jump:                                   ; CODE XREF: hblank_fx_0x30_0x38+4   j
                 move.w  (VSRAM_FFE402).w,(VDP_DATA).l
                 move.l  #$70000003,(VDP_CTRL).l ; DO_WRITE_TO_VRAM_AT_$F000_ADDR
                                         ; DO_OPERATION_WITHOUT_DMA
-                move.w  (VSRAM_FFE400).w,(VDP_DATA).l
+                move.w  (VSRAM_HSCROLL_TBL).w,(VDP_DATA).l
                 move.l  #$40020010,(VDP_CTRL).l ; DO_WRITE_TO_VSRAM_AT_$0002_ADDR
                                         ; DO_OPERATION_WITHOUT_DMA
                 move.w  (VSRAM_FFEC02).w,(VDP_DATA).l
                 move.l  #$40000010,(VDP_CTRL).l ; DO_WRITE_TO_VSRAM_AT_$0000_ADDR
                                         ; DO_OPERATION_WITHOUT_DMA
-                move.w  (VSRAM_FFEC00).w,(VDP_DATA).l
+                move.w  (VSRAM_VSCROLL_TBL).w,(VDP_DATA).l
                 movea.w #(word_FF9FF8-M68K_RAM),a0
-                move.w  (VSRAM_FFEC00).w,(a0)+
+                move.w  (VSRAM_VSCROLL_TBL).w,(a0)+
                 move.w  (VSRAM_FFEC02).w,(a0)+
                 move.w  (word_FFA928).w,d0
                 neg.w   d0
-                cmpi.w  #$30,(HBLANK_FX_ID).w ; '0'
+                cmpi.w  #$30,(GFX_RASTER_FX_ID).w ; '0'
                 beq.s   end
-                move.w  (VSRAM_FFE400).w,d0
-end:                                    ; CODE XREF: hblank_fx_0x30_0x38+AC   j
+                move.w  (VSRAM_HSCROLL_TBL).w,d0
+end:                                    ; CODE XREF: raster_fx_0x30_0x38+AC   j
                 move.w  d0,(a0)+
                 movea.w #(word_FF9FF8-M68K_RAM),a6
                 rts
-; End of function hblank_fx_0x30_0x38
+; End of function raster_fx_0x30_0x38
 ; ---------------------------------------------------------------------------
-stru_183C:      dc.w T_CPY_RAM          ; type ; DATA XREF: hblank_fx_0x30_0x38+1A   o
+stru_183C:      dc.w T_CPY_RAM          ; type ; DATA XREF: raster_fx_0x30_0x38+1A   o
                 dc.l word_1846          ; src
                 dc.w $EE00              ; dest
                 dc.w $FFFF
@@ -984,24 +986,24 @@ sub_1848:
                 rte
 ; End of function sub_1848
 ; jumptable 0000135E case 6
-hblank_fx_0x18:                         ; CODE XREF: hblank_update+8   j
+raster_fx_0x18:                         ; CODE XREF: gfx_raster_load+8   j
                                         ; DATA XREF: ROM:jpt_135E   o
-                move.w  (GFX_HBLANK_INIT_FLAG_IDK).w,d0
+                move.w  (GFX_RASTER_FX_FLAG).w,d0
                 bne.w   end
-                addq.w  #4,(GFX_HBLANK_INIT_FLAG_IDK).w
+                addq.w  #4,(GFX_RASTER_FX_FLAG).w
                 move.b  #3,(VDP_HRATE_RAM+1).w
                 lea     stru_193E(pc),a0
                 nop
                 jsr     (gfx_read_data).l
                 ori.b   #$10,(VDP_MODE1_RAM+1).w
-end:                                    ; CODE XREF: hblank_fx_0x18+4   j
+end:                                    ; CODE XREF: raster_fx_0x18+4   j
                 move.w  (VDP_HRATE_RAM).w,(VDP_CTRL).l
                 move.w  (VDP_MODE1_RAM).w,(VDP_CTRL).l
-                lea     (word_FF9800).w,a6
+                lea     (dword_FF9800).w,a6
                 rts
-; End of function hblank_fx_0x18
+; End of function raster_fx_0x18
 ; ---------------------------------------------------------------------------
-stru_193E:      dc.w T_CPY_RAM          ; type ; DATA XREF: hblank_fx_0x18+12   o
+stru_193E:      dc.w T_CPY_RAM          ; type ; DATA XREF: raster_fx_0x18+12   o
                 dc.l word_1948          ; src
                 dc.w $EE00              ; dest
                 dc.w $FFFF
@@ -1013,21 +1015,21 @@ sub_194A:
                 rte
 ; End of function sub_194A
 ; jumptable 0000135E case 16
-hblank_fx_0x40:                         ; CODE XREF: hblank_update+8   j
+raster_fx_0x40:                         ; CODE XREF: gfx_raster_load+8   j
                                         ; DATA XREF: ROM:jpt_135E   o
-                move.w  (GFX_HBLANK_INIT_FLAG_IDK).w,d0
+                move.w  (GFX_RASTER_FX_FLAG).w,d0
                 bne.w   jump
-                addq.w  #4,(GFX_HBLANK_INIT_FLAG_IDK).w
+                addq.w  #4,(GFX_RASTER_FX_FLAG).w
                 move.w  (VDP_HRATE_RAM).w,(VDP_CTRL).l
                 lea     stru_19CC(pc),a0
                 nop
                 jsr     (gfx_read_data).l
                 ori.b   #$10,(VDP_MODE1_RAM+1).w
                 move.w  (VDP_MODE1_RAM).w,(VDP_CTRL).l
-jump:                                   ; CODE XREF: hblank_fx_0x40+4   j
+jump:                                   ; CODE XREF: raster_fx_0x40+4   j
                 move.w  (dword_FF8128).w,d1
                 neg.w   d1
-                add.w   (word_FFA012).w,d1
+                add.w   (yoff_FFA012).w,d1
                 move.w  d1,d0
                 neg.w   d0
                 move.w  d0,(dword_FF8134).w
@@ -1035,16 +1037,16 @@ jump:                                   ; CODE XREF: hblank_fx_0x40+4   j
                 cmpi.w  #$E2,d1
                 bmi.s   end
                 move.w  #$E2,d1
-end:                                    ; CODE XREF: hblank_fx_0x40+48   j
+end:                                    ; CODE XREF: raster_fx_0x40+48   j
                 andi.w  #$FF,d1
                 move.b  d1,(VDP_HRATE_RAM+1).w
                 move.w  (VDP_HRATE_RAM).w,(VDP_CTRL).l
                 move.w  (VDP_MODE3_RAM).w,(VDP_CTRL).l
                 move.w  (VDP_PLANEB_RAM).w,(VDP_CTRL).l
                 rts
-; End of function hblank_fx_0x40
+; End of function raster_fx_0x40
 ; ---------------------------------------------------------------------------
-stru_19CC:      dc.w T_CPY_RAM          ; type ; DATA XREF: hblank_fx_0x40+14   o
+stru_19CC:      dc.w T_CPY_RAM          ; type ; DATA XREF: raster_fx_0x40+14   o
                 dc.l word_19D6          ; src
                 dc.w $EE00              ; dest
                 dc.w $FFFF
@@ -1133,24 +1135,24 @@ sub_19D8:
                 rte
 ; End of function sub_19D8
 ; jumptable 0000135E case 18
-hblank_fx_0x48:                         ; CODE XREF: hblank_update+8   j
+raster_fx_0x48:                         ; CODE XREF: gfx_raster_load+8   j
                                         ; DATA XREF: ROM:jpt_135E   o
-                move.w  (GFX_HBLANK_INIT_FLAG_IDK).w,d0
+                move.w  (GFX_RASTER_FX_FLAG).w,d0
                 bne.w   end
-                addq.w  #4,(GFX_HBLANK_INIT_FLAG_IDK).w
+                addq.w  #4,(GFX_RASTER_FX_FLAG).w
                 move.b  #3,(VDP_HRATE_RAM+1).w
                 lea     stru_1AC8(pc),a0
                 nop
                 jsr     (gfx_read_data).l
                 ori.b   #$10,(VDP_MODE1_RAM+1).w
-end:                                    ; CODE XREF: hblank_fx_0x48+4   j
+end:                                    ; CODE XREF: raster_fx_0x48+4   j
                 move.w  (VDP_BGCOL_RAM).w,(VDP_CTRL).l
                 move.w  (VDP_MODE4_RAM).w,(VDP_CTRL).l
                 movea.w #(word_FF9C00-M68K_RAM),a6
                 rts
-; End of function hblank_fx_0x48
+; End of function raster_fx_0x48
 ; ---------------------------------------------------------------------------
-stru_1AC8:      dc.w T_CPY_RAM          ; type ; DATA XREF: hblank_fx_0x48+12   o
+stru_1AC8:      dc.w T_CPY_RAM          ; type ; DATA XREF: raster_fx_0x48+12   o
                 dc.l word_1AD2          ; src
                 dc.w $EE00              ; dest
                 dc.w $FFFF
@@ -1160,44 +1162,44 @@ sub_1AD4:
                 rte
 ; End of function sub_1AD4
 ; jumptable 0000135E case 20
-hblank_fx_0x50:                         ; CODE XREF: hblank_update+8   j
+raster_fx_0x50:                         ; CODE XREF: gfx_raster_load+8   j
                                         ; DATA XREF: ROM:jpt_135E   o
-                move.w  (GFX_HBLANK_INIT_FLAG_IDK).w,d0
+                move.w  (GFX_RASTER_FX_FLAG).w,d0
                 bne.w   end
-                addq.w  #4,(GFX_HBLANK_INIT_FLAG_IDK).w
+                addq.w  #4,(GFX_RASTER_FX_FLAG).w
                 move.b  #1,(VDP_HRATE_RAM+1).w
                 move.w  (VDP_HRATE_RAM).w,(VDP_CTRL).l
                 lea     stru_1418(pc),a0
                 jsr     (gfx_read_data).l
                 ori.b   #$10,(VDP_MODE1_RAM+1).w
                 move.w  (VDP_MODE1_RAM).w,(VDP_CTRL).l
-end:                                    ; CODE XREF: hblank_fx_0x50+4   j
+end:                                    ; CODE XREF: raster_fx_0x50+4   j
                 move.w  (VDP_MODE1_RAM).w,(VDP_CTRL).l
                 move.w  (VDP_HRATE_RAM).w,(VDP_CTRL).l
                 lea     (word_FF9C00).w,a6
                 rts
-; End of function hblank_fx_0x50
+; End of function raster_fx_0x50
 ; jumptable 0000135E case 21
-hblank_fx_0x54:                         ; CODE XREF: hblank_update+8   j
+raster_fx_0x54:                         ; CODE XREF: gfx_raster_load+8   j
                                         ; DATA XREF: ROM:jpt_135E   o
-                move.w  (GFX_HBLANK_INIT_FLAG_IDK).w,d0
+                move.w  (GFX_RASTER_FX_FLAG).w,d0
                 bne.w   end
-                addq.w  #4,(GFX_HBLANK_INIT_FLAG_IDK).w
+                addq.w  #4,(GFX_RASTER_FX_FLAG).w
                 move.b  #0,(VDP_HRATE_RAM+1).w
                 lea     stru_1B6E(pc),a0
                 nop
                 jsr     (gfx_read_data).l
                 ori.b   #$10,(VDP_MODE1_RAM+1).w
                 move.w  (VDP_MODE1_RAM).w,(VDP_CTRL).l
-end:                                    ; CODE XREF: hblank_fx_0x54+4   j
+end:                                    ; CODE XREF: raster_fx_0x54+4   j
                 move.w  (VDP_MODE3_RAM).w,(VDP_CTRL).l
                 move.w  (VDP_PLANEA_RAM).w,(VDP_CTRL).l
                 lea     (word_FF9E40).w,a6
                 move.w  (VDP_HRATE_RAM).w,(VDP_CTRL).l
                 rts
-; End of function hblank_fx_0x54
+; End of function raster_fx_0x54
 ; ---------------------------------------------------------------------------
-stru_1B6E:      dc.w T_CPY_RAM          ; type ; DATA XREF: hblank_fx_0x54+12   o
+stru_1B6E:      dc.w T_CPY_RAM          ; type ; DATA XREF: raster_fx_0x54+12   o
                 dc.l word_1B78          ; src
                 dc.w $EE00              ; dest
                 dc.w $FFFF
@@ -1275,31 +1277,31 @@ sub_1B7A:
                 rte
 ; End of function sub_1B7A
 ; jumptable 0000135E case 22
-hblank_fx_0x58:                         ; CODE XREF: hblank_update+8   j
+raster_fx_0x58_seven_force:             ; CODE XREF: gfx_raster_load+8   j
                                         ; DATA XREF: ROM:jpt_135E   o
-                move.w  (GFX_HBLANK_INIT_FLAG_IDK).w,d0
+                move.w  (GFX_RASTER_FX_FLAG).w,d0
                 bne.w   end
-                addq.w  #4,(GFX_HBLANK_INIT_FLAG_IDK).w
+                addq.w  #4,(GFX_RASTER_FX_FLAG).w
                 move.b  #$80,(VDP_HRATE_RAM+1).w
                 lea     stru_1C6C(pc),a0
                 nop
                 jsr     (gfx_read_data).l
                 ori.b   #$10,(VDP_MODE1_RAM+1).w
                 move.w  (VDP_MODE1_RAM).w,(VDP_CTRL).l
-end:                                    ; CODE XREF: hblank_fx_0x58+4   j
+end:                                    ; CODE XREF: raster_fx_0x58_seven_force+4   j
                 move.w  (VDP_PLANEA_RAM).w,(VDP_CTRL).l
                 move.w  (VDP_PLANEB_RAM).w,(VDP_CTRL).l
                 move.w  (VDP_WINX_RAM).w,(VDP_CTRL).l
                 move.w  (VDP_WINY_RAM).w,(VDP_CTRL).l
                 rts
-; End of function hblank_fx_0x58
+; End of function raster_fx_0x58_seven_force
 ; ---------------------------------------------------------------------------
-stru_1C6C:      dc.w T_CPY_RAM          ; type ; DATA XREF: hblank_fx_0x58+12   o
+stru_1C6C:      dc.w T_CPY_RAM          ; type ; DATA XREF: raster_fx_0x58_seven_force+12   o
                 dc.l word_1C76          ; src
                 dc.w $EE00              ; dest
                 dc.w $FFFF
 word_1C76:      dc.w $200               ; DATA XREF: ROM:stru_1C6C   o
-sub_1C78:
+gfx_raster_move_10_cells_left:
                 nop
                 nop
                 nop
@@ -1369,7 +1371,7 @@ sub_1C78:
                 move.w  #$9200,(VDP_CTRL).l ; MOVE_WINDOW_VERT_LEFT
                                         ; MOVE_BY_0_CELLS
                 rte
-; End of function sub_1C78
+; End of function gfx_raster_move_10_cells_left
 sub_1D0A:
                 ori.w   #$46FC,d0
                 move.l  d0,-(a3)
@@ -1386,8 +1388,8 @@ dma_queue_prepend_1D32:
 ; ---------------------------------------------------------------------------
                 move.b  #1,d3
 load_ptr:                               ; CODE XREF: dma_queue_prepend_1D32+2   j
-                movea.w (DMA_QUEUE_PTR0).w,a1
-                movea.w (DMA_QUEUE_SRC_70E).w,a2
+                movea.w (DMA_QUEUE_PTR_F70C).w,a1
+                movea.w (DMA_QUEUE_SRC_F70E).w,a2
 loop0:                                  ; CODE XREF: dma_queue_prepend_1D32+6A   j
                                         ; dma_queue_prepend_1D32+6E   j
                 move.w  (a0)+,d0
@@ -1438,8 +1440,8 @@ loop0_cond:                             ; CODE XREF: dma_queue_prepend_1D32+4A  
 ; ---------------------------------------------------------------------------
 end:                                    ; CODE XREF: dma_queue_prepend_1D32+50   j
                 move.l  d1,-(a1)
-                move.w  a1,(DMA_QUEUE_PTR0).w
-                move.w  a2,(DMA_QUEUE_SRC_70E).w
+                move.w  a1,(DMA_QUEUE_PTR_F70C).w
+                move.w  a2,(DMA_QUEUE_SRC_F70E).w
                 rts
 ; End of function dma_queue_prepend_1D32
 dma_queue_prepend_1DAE:
@@ -1448,8 +1450,8 @@ dma_queue_prepend_1DAE:
 ; ---------------------------------------------------------------------------
                 move.b  #1,d3
 loc_1DB6:                               ; CODE XREF: dma_queue_prepend_1DAE+2   j
-                movea.w (DMA_QUEUE_PTR0).w,a1
-                movea.w (DMA_QUEUE_SRC_70E).w,a2
+                movea.w (DMA_QUEUE_PTR_F70C).w,a1
+                movea.w (DMA_QUEUE_SRC_F70E).w,a2
 loc_1DBE:                               ; CODE XREF: dma_queue_prepend_1DAE+68   j
                                         ; dma_queue_prepend_1DAE+6C   j
                 move.l  (a0)+,-(a1)
@@ -1499,16 +1501,16 @@ loc_1E0E:                               ; CODE XREF: dma_queue_prepend_1DAE+48  
 ; ---------------------------------------------------------------------------
 loc_1E1C:                               ; CODE XREF: dma_queue_prepend_1DAE+4E   j
                 move.l  d1,-(a1)
-                move.w  a1,(DMA_QUEUE_PTR0).w
-                move.w  a2,(DMA_QUEUE_SRC_70E).w
+                move.w  a1,(DMA_QUEUE_PTR_F70C).w
+                move.w  a2,(DMA_QUEUE_SRC_F70E).w
                 rts
 ; End of function dma_queue_prepend_1DAE
 dma_queue_prepend_1E28:
-                movea.w (DMA_QUEUE_PTR0).w,a1
-                movea.w (DMA_QUEUE_SRC_70E).w,a2
+                movea.w (DMA_QUEUE_PTR_F70C).w,a1
+                movea.w (DMA_QUEUE_SRC_F70E).w,a2
                 move.l  d2,-(a1)
                 move.l  a2,d4
-                andi.l  #$FFFFFF,d4
+                andi.l  #$00FFFFFF,d4
                 lsr.l   #1,d4
                 move.w  #$9500,d2       ; SET_LOWER_BYTE_OF_DMA_SRC_TO_$00
                 move.b  d4,d2
@@ -1526,13 +1528,13 @@ dma_queue_prepend_1E28:
                 bne.w   loc_1E6E
                 moveq   #5,d3
                 move.w  #8,d2
-                andi.l  #$FFFF,d1
+                andi.l  #$0000FFFF,d1
                 bra.w   loc_1E7C
 ; ---------------------------------------------------------------------------
 loc_1E6E:                               ; CODE XREF: dma_queue_prepend_1E28+32   j
                 subq.w  #1,d2
                 asl.w   #1,d2
-                andi.l  #$FFFF,d1
+                andi.l  #$0000FFFF,d1
                 bra.w   loc_1E94
 ; ---------------------------------------------------------------------------
 loc_1E7C:                               ; CODE XREF: dma_queue_prepend_1E28+42   j
@@ -1563,19 +1565,19 @@ loc_1EA8:                               ; CODE XREF: dma_queue_prepend_1E28+68  
                                         ; SET_HIGHER_BYTE_OF_DMA_LEN_TO_$00
                 add.b   d3,d2
                 move.l  d2,-(a1)
-                move.w  a1,(DMA_QUEUE_PTR0).w
-                move.w  a2,(DMA_QUEUE_SRC_70E).w
+                move.w  a1,(DMA_QUEUE_PTR_F70C).w
+                move.w  a2,(DMA_QUEUE_SRC_F70E).w
                 rts
 ; End of function dma_queue_prepend_1E28
 ; ---------------------------------------------------------------------------
 word_1EC0:      dc.w     1,   10,  100, 1000
 dma_queue_prepend_1EC8:
                 move.l  (a0),-(a3)
-                movea.w (DMA_QUEUE_PTR0).w,a1
-                movea.w (DMA_QUEUE_SRC_70E).w,a2
+                movea.w (DMA_QUEUE_PTR_F70C).w,a1
+                movea.w (DMA_QUEUE_SRC_F70E).w,a2
                 move.l  d2,-(a1)
                 move.l  a2,d4
-                andi.l  #$FFFFFF,d4
+                andi.l  #$00FFFFFF,d4
                 lsr.l   #1,d4
                 move.w  #$9500,d2       ; SET_LOWER_BYTE_OF_DMA_SRC_TO_$00
                 move.b  d4,d2
@@ -1593,13 +1595,13 @@ dma_queue_prepend_1EC8:
                 bne.w   loc_1F10
                 moveq   #5,d3
                 move.w  #8,d2
-                andi.l  #$FFFF,d1
+                andi.l  #$0000FFFF,d1
                 bra.w   loc_1F1E
 ; ---------------------------------------------------------------------------
 loc_1F10:                               ; CODE XREF: dma_queue_prepend_1EC8+34   j
                 subq.w  #1,d2
                 asl.w   #1,d2
-                andi.l  #$FFFF,d1
+                andi.l  #$0000FFFF,d1
                 bra.w   loc_1F36
 ; ---------------------------------------------------------------------------
 loc_1F1E:                               ; CODE XREF: dma_queue_prepend_1EC8+44   j
@@ -1630,13 +1632,13 @@ loc_1F4A:                               ; CODE XREF: dma_queue_prepend_1EC8+6A  
                                         ; SET_HIGHER_BYTE_OF_DMA_LEN_TO_$00
                 add.b   d3,d2
                 move.l  d2,-(a1)
-                move.w  a1,(DMA_QUEUE_PTR0).w
-                move.w  a2,(DMA_QUEUE_SRC_70E).w
+                move.w  a1,(DMA_QUEUE_PTR_F70C).w
+                move.w  a2,(DMA_QUEUE_SRC_F70E).w
                 rts
 ; End of function dma_queue_prepend_1EC8
 ; ---------------------------------------------------------------------------
 word_1F62:      dc.w     1,   16,  256, 4096
-dma_queue_prepend_player:               ; CODE XREF: gfx_build_player+50   p gfx_update_unused+62   p
+dma_queue_prepend_player:               ; CODE XREF: gfx_sprite_build_player+50   p gfx_update_unused+62   p
                 move.w  (a1)+,d1        ; dma len
                 move.w  d0,d7
                 rol.w   #2,d7
@@ -1720,7 +1722,7 @@ skip_init:                              ; CODE XREF: gfx_sprite_build+4   j
                 move.b  (GFX_SPR_SLOTS_USED).w,d4
                 movea.w (GFX_SPR_TABLE).w,a3
                 lea     (PLAYER_STRUCT).w,a5
-                bsr.w   gfx_build_player
+                bsr.w   gfx_sprite_build_player
                 move.w  (OBJECT_CNT).w,d2
                 beq.w   is_zero
                 subq.w  #1,d2
@@ -1730,21 +1732,21 @@ loop:                                   ; CODE XREF: gfx_sprite_build:next_sprit
                 move.b  CRTL_UNK2(a5),d7
                 bpl.s   is_positive
                 add.b   d7,d7
-                bpl.w   gfx_insert_sprite
+                bpl.w   gfx_sprite_insert
                 movea.l CRTL_SPRITE_PTR(a5),a4
                 add.b   d7,d7
                 bpl.s   d7_is_positive
-                bsr.w   gfx_advance_sprite_frame_idk
+                bsr.w   gfx_sprite_advance_frame
 d7_is_positive:                         ; CODE XREF: gfx_sprite_build+44   j
                 swap    d2
-                bsr.w   gfx_build_sprite_pieces_full
+                bsr.w   gfx_sprite_build_pieces_full
                 swap    d2
 next_sprite:                            ; CODE XREF: gfx_sprite_build:is_positive   j gfx_sprite_build+66   j ...
                 dbf     d2,loop
 is_zero:                                ; CODE XREF: gfx_sprite_build+26   j
                 move.b  d4,(GFX_SPR_SLOTS_USED).w
                 move.w  a3,(GFX_SPR_TABLE).w
-                bra.w   gfx_flush_sprite_slots
+                bra.w   gfx_sprite_flush_slots
 ; ---------------------------------------------------------------------------
 is_positive:                            ; CODE XREF: gfx_sprite_build+36   j
                 beq.s   next_sprite
@@ -1754,41 +1756,42 @@ is_positive:                            ; CODE XREF: gfx_sprite_build+36   j
                 bpl.s   next_sprite
                 movea.l CRTL_SPRITE_PTR(a5),a4
                 pea     next_sprite(pc)
-                bra.w   gfx_advance_sprite_frame_idk
+                bra.w   gfx_sprite_advance_frame
 ; End of function gfx_sprite_build
-gfx_build_player:                       ; CODE XREF: gfx_sprite_build+1E   p
+gfx_sprite_build_player:                ; CODE XREF: gfx_sprite_build+1E   p
                 move.w  CRTL_UNK2(a5),d7
                 bmi.w   is_neg          ; most likely check: if unk2 == 0xFF, branch
                 beq.s   end
                 movea.l CRTL_SPRITE_PTR(a5),a4
                 bra.w   sprite_ptr_to_a4
 ; ---------------------------------------------------------------------------
-is_neg:                                 ; CODE XREF: gfx_build_player+4   j
+is_neg:                                 ; CODE XREF: gfx_sprite_build_player+4   j
                 move.l  CRTL_SPRITE_PTR(a5),d0
                 beq.w   end
                 movea.l d0,a4
                 bsr.w   sprite_ptr_to_a4
                 btst    #5,d7
-                bne.w   gfx_build_sprite_pieces_full
+                bne.w   gfx_sprite_build_pieces_full
                 lea     CRTL_DMA_SRC_INFO(a5),a2
                 cmpa.l  CRTL_SPRITE_PTR_PREV(a5),a4
-                beq.w   gfx_build_sprite_pieces_dma_list
+                beq.w   gfx_sprite_build_pieces_dma_list
                 move.l  a4,CRTL_SPRITE_PTR_PREV(a5)
-                bsr.w   gfx_build_sprite_pieces_dma_list
+                bsr.w   gfx_sprite_build_pieces_dma_list
                 lea     CRTL_DMA_SRC_INFO(a5),a4
                 cmpa.w  a4,a2
                 beq.w   end
-                movea.w (DMA_QUEUE_PTR0).w,a0
+                movea.w (DMA_QUEUE_PTR_F70C).w,a0
                 move.w  CRTL_SPRITE_DEST(a5),d0
-loop:                                   ; CODE XREF: gfx_build_player+58   j
+loop:                                   ; CODE XREF: gfx_sprite_build_player+58   j
                 movea.l (a4)+,a1
                 jsr     (dma_queue_prepend_player).l
                 cmpa.w  a4,a2
                 bhi.s   loop
-                move.w  a0,(DMA_QUEUE_PTR0).w
-end:                                    ; CODE XREF: gfx_build_player+8   j gfx_build_player+16   j ...
+                move.w  a0,(DMA_QUEUE_PTR_F70C).w
+end:                                    ; CODE XREF: gfx_sprite_build_player+8   j
+                                        ; gfx_sprite_build_player+16   j ...
                 rts
-; End of function gfx_build_player
+; End of function gfx_sprite_build_player
 gfx_update_unused:
                 move.b  CRTL_UNK2(a5),d7
                 bmi.w   loc_210E
@@ -1817,18 +1820,18 @@ loc_2128:                               ; CODE XREF: gfx_update_unused+2E   j
                 lea     CRTL_DMA_SRC_INFO(a5),a4
                 cmpa.w  a4,a2
                 beq.w   end
-                movea.w (DMA_QUEUE_PTR0).w,a0
+                movea.w (DMA_QUEUE_PTR_F70C).w,a0
                 move.w  CRTL_SPRITE_DEST(a5),d0
 loop:                                   ; CODE XREF: gfx_update_unused+6A   j
                 movea.l (a4)+,a1
                 jsr     (dma_queue_prepend_player).l
                 cmpa.w  a4,a2
                 bhi.s   loop
-                move.w  a0,(DMA_QUEUE_PTR0).w
+                move.w  a0,(DMA_QUEUE_PTR_F70C).w
 end:                                    ; CODE XREF: gfx_update_unused+8   j gfx_update_unused+E   j ...
                 rts
 ; End of function gfx_update_unused
-gfx_advance_sprite_frame_idk:           ; CODE XREF: gfx_sprite_build+46   p gfx_sprite_build+74   j
+gfx_sprite_advance_frame:               ; CODE XREF: gfx_sprite_build+46   p gfx_sprite_build+74   j
                 move.w  CRTL_UNKC(a5),d0
                 tst.b   d0
                 bmi.s   is_neg
@@ -1836,23 +1839,24 @@ gfx_advance_sprite_frame_idk:           ; CODE XREF: gfx_sprite_build+46   p gfx
                 tst.l   d3
                 bmi.s   jump1
                 subq.w  #1,d0
-jump1:                                  ; CODE XREF: gfx_advance_sprite_frame_idk+C   j
+jump1:                                  ; CODE XREF: gfx_sprite_advance_frame+C   j
                 bne.s   jump2
                 addq.w  #4,a4
                 move.w  2(a4),d0
                 bne.s   a4_to_sprite_ptr
                 adda.w  (a4),a4
-is_zero:                                ; CODE XREF: gfx_advance_sprite_frame_idk+8   j
+is_zero:                                ; CODE XREF: gfx_sprite_advance_frame+8   j
                 move.w  2(a4),d0
-a4_to_sprite_ptr:                       ; CODE XREF: gfx_advance_sprite_frame_idk+18   j
+a4_to_sprite_ptr:                       ; CODE XREF: gfx_sprite_advance_frame+18   j
                 move.l  a4,CRTL_SPRITE_PTR(a5)
-jump2:                                  ; CODE XREF: gfx_advance_sprite_frame_idk:jump1   j
+jump2:                                  ; CODE XREF: gfx_sprite_advance_frame:jump1   j
                 move.w  d0,CRTL_UNKC(a5)
-is_neg:                                 ; CODE XREF: gfx_advance_sprite_frame_idk+6   j
+is_neg:                                 ; CODE XREF: gfx_sprite_advance_frame+6   j
                 adda.w  (a4),a4
                 rts
-; End of function gfx_advance_sprite_frame_idk
-sprite_ptr_to_a4:                       ; CODE XREF: gfx_build_player+E   j gfx_build_player+1C   p ...
+; End of function gfx_sprite_advance_frame
+sprite_ptr_to_a4:                       ; CODE XREF: gfx_sprite_build_player+E   j
+                                        ; gfx_sprite_build_player+1C   p ...
                 movea.l CRTL_SPRITE_PTR(a5),a4
                 rts
 ; End of function sprite_ptr_to_a4
@@ -1920,7 +1924,7 @@ jump:                                   ; CODE XREF: gfx_sprite_slot_init+18   j
                 move.b  #1,(GFX_SPR_BUILD_FLAG).w
                 rts
 ; End of function gfx_sprite_slot_init
-gfx_flush_sprite_slots:                 ; CODE XREF: gfx_sprite_build+5E   j
+gfx_sprite_flush_slots:                 ; CODE XREF: gfx_sprite_build+5E   j
                 move.b  #$50,d0 ; 'P'   ; $50, aka 80 is the sprite max
                 sub.b   (GFX_SPR_SLOTS_USED).w,d0
                 move.b  d0,(GFX_SPR_SLOTS_FREE).w
@@ -1929,23 +1933,23 @@ gfx_flush_sprite_slots:                 ; CODE XREF: gfx_sprite_build+5E   j
                 move.w  (word_FFF756).w,d0
                 bne.w   FFF756_nonzero
                 moveq   #1,d0
-FFF756_nonzero:                         ; CODE XREF: gfx_flush_sprite_slots+16   j
+FFF756_nonzero:                         ; CODE XREF: gfx_sprite_flush_slots+16   j
                 asl.w   #3,d0
                 addi.w  #$E000,d0
                 movea.w d0,a1
-loop:                                   ; CODE XREF: gfx_flush_sprite_slots+30   j
+loop:                                   ; CODE XREF: gfx_sprite_flush_slots+30   j
                 move.w  (a0)+,d0
                 beq.s   is_zero
                 move.b  d0,-5(a1)
                 movea.w (a0),a1
-is_zero:                                ; CODE XREF: gfx_flush_sprite_slots+26   j
+is_zero:                                ; CODE XREF: gfx_sprite_flush_slots+26   j
                 addq.w  #2,a0
                 dbf     d2,loop
                 move.b  #0,-5(a1)
                 clr.b   (GFX_SPR_BUILD_FLAG).w
                 rts
-; End of function gfx_flush_sprite_slots
-gfx_insert_sprite:                      ; CODE XREF: gfx_sprite_build+3A   j
+; End of function gfx_sprite_flush_slots
+gfx_sprite_insert:                      ; CODE XREF: gfx_sprite_build+3A   j
                 cmpi.b  #80,d4          ; sprite limit
                 bge.s   end
                 move.b  CRTL_SPRITE_YOFF(a5),d6
@@ -1954,7 +1958,7 @@ gfx_insert_sprite:                      ; CODE XREF: gfx_sprite_build+3A   j
                 tst.b   CRTL_UNK3(a5)
                 bmi.s   is_minus
                 sub.w   (SOME_Y_POS_OFFSET).w,d6
-is_minus:                               ; CODE XREF: gfx_insert_sprite+14   j
+is_minus:                               ; CODE XREF: gfx_sprite_insert+14   j
                 cmpi.w  #512,d6
                 bcc.s   end
                 move.b  CRTL_SPRITE_XOFF(a5),d5
@@ -1963,7 +1967,7 @@ is_minus:                               ; CODE XREF: gfx_insert_sprite+14   j
                 beq.s   end
                 cmpi.w  #544,d5
                 bcc.s   end
-                move.b  CRTL_UNK20(a5),d0
+                move.b  CRTL_SPR_SLOT(a5),d0
                 andi.w  #%0000000011111100,d0
                 movea.w d0,a1
                 movea.w GFX_SPR_TABLE_TAIL-$1000000(a1),a0
@@ -1976,14 +1980,14 @@ is_minus:                               ; CODE XREF: gfx_insert_sprite+14   j
                 move.w  CRTL_SPRITE_FLAGS(a5),(a3)+ ; sprite flags
                 move.w  d5,(a3)+        ; sprite x
                 move.w  a3,GFX_SPR_TABLE_TAIL-$1000000(a1)
-end:                                    ; CODE XREF: gfx_insert_sprite+4   j gfx_insert_sprite+1E   j ...
+end:                                    ; CODE XREF: gfx_sprite_insert+4   j gfx_sprite_insert+1E   j ...
                 bra.w   next_sprite
-; End of function gfx_insert_sprite
-posbound_end:                           ; CODE XREF: gfx_build_sprite_pieces_full+24   j
-                                        ; gfx_build_sprite_pieces_full+2A   j
+; End of function gfx_sprite_insert
+posbound_end:                           ; CODE XREF: gfx_sprite_build_pieces_full+24   j
+                                        ; gfx_sprite_build_pieces_full+2A   j
                 rts
 ; End of function posbound_end
-gfx_build_sprite_pieces_full:           ; CODE XREF: gfx_sprite_build+4C   p gfx_build_player+24   j
+gfx_sprite_build_pieces_full:           ; CODE XREF: gfx_sprite_build+4C   p gfx_sprite_build_player+24   j
 XPOS_d5 = d5
 YPOS_d6 = d6
                 move.w  CRTL_SPRITE_FLAGS(a5),d7
@@ -1995,12 +1999,12 @@ YPOS_d6 = d6
                 tst.b   CRTL_UNK3(a5)
                 bmi.s   jump0
                 sub.w   (SOME_Y_POS_OFFSET).w,YPOS_d6
-jump0:                                  ; CODE XREF: gfx_build_sprite_pieces_full+1A   j
+jump0:                                  ; CODE XREF: gfx_sprite_build_pieces_full+1A   j
                 cmpi.w  #512,YPOS_d6    ; if ypos >= 512, branch
                 bcc.s   posbound_end
                 cmpi.w  #544,XPOS_d5    ; if xpos >= 544, branch
                 bcc.s   posbound_end
-                move.b  CRTL_UNK20(a5),d0
+                move.b  CRTL_SPR_SLOT(a5),d0
                 andi.w  #%0000000011111100,d0
                 movea.w d0,a1
                 movea.w GFX_SPR_TABLE_TAIL-$1000000(a1),a0
@@ -2010,33 +2014,33 @@ jump0:                                  ; CODE XREF: gfx_build_sprite_pieces_ful
                 lea     lea_loop0(pc),a0
                 bra.s   loop_entry
 ; ---------------------------------------------------------------------------
-jump1:                                  ; CODE XREF: gfx_build_sprite_pieces_full+42   j
+jump1:                                  ; CODE XREF: gfx_sprite_build_pieces_full+42   j
                 lea     lea_loop1(pc),a0
                 subq.w  #7,XPOS_d5
                 bra.s   loop_entry
 ; ---------------------------------------------------------------------------
-lea_loop1:                              ; DATA XREF: gfx_build_sprite_pieces_full:jump1   o
+lea_loop1:                              ; DATA XREF: gfx_sprite_build_pieces_full:jump1   o
                 neg.w   d0
                 move.b  -4(a4),d1
                 add.w   d1,d1
                 andi.w  #%0000000000011000,d1
                 sub.w   d1,d0
-lea_loop0:                              ; DATA XREF: gfx_build_sprite_pieces_full+44   o
+lea_loop0:                              ; DATA XREF: gfx_sprite_build_pieces_full+44   o
                 add.w   XPOS_d5,d0
                 bmi.s   d0_neg
                 andi.w  #%0000000111111111,d0
                 bne.s   d0_nonzero
-d0_neg:                                 ; CODE XREF: gfx_build_sprite_pieces_full+62   j
+d0_neg:                                 ; CODE XREF: gfx_sprite_build_pieces_full+62   j
                 moveq   #1,d0
-d0_nonzero:                             ; CODE XREF: gfx_build_sprite_pieces_full+68   j
+d0_nonzero:                             ; CODE XREF: gfx_sprite_build_pieces_full+68   j
                 move.w  d3,d1
                 bmi.s   exit_loop
                 eor.w   d7,d1
                 add.w   d2,d1
                 move.w  d1,(a3)+
                 move.w  d0,(a3)+
-loop_entry:                             ; CODE XREF: gfx_build_sprite_pieces_full+48   j
-                                        ; gfx_build_sprite_pieces_full+50   j
+loop_entry:                             ; CODE XREF: gfx_sprite_build_pieces_full+48   j
+                                        ; gfx_sprite_build_pieces_full+50   j
                 cmpi.b  #$50,d4 ; 'P'
                 bge.s   end
                 move.w  (a4)+,d3
@@ -2052,7 +2056,7 @@ loop_entry:                             ; CODE XREF: gfx_build_sprite_pieces_ful
                 andi.w  #$18,d1
                 addq.w  #8,d1
                 sub.w   d1,d0
-jump6:                                  ; CODE XREF: gfx_build_sprite_pieces_full+8E   j
+jump6:                                  ; CODE XREF: gfx_sprite_build_pieces_full+8E   j
                 add.w   YPOS_d6,d0
                 addq.b  #1,d4
                 swap    d0
@@ -2062,21 +2066,22 @@ jump6:                                  ; CODE XREF: gfx_build_sprite_pieces_ful
                 ext.w   d0
                 jmp     (a0)
 ; ---------------------------------------------------------------------------
-exit_loop:                              ; CODE XREF: gfx_build_sprite_pieces_full+6E   j
+exit_loop:                              ; CODE XREF: gfx_sprite_build_pieces_full+6E   j
                 andi.w  #%0111111111111111,d1
                 eor.w   d7,d1
                 add.w   d2,d1
                 move.w  d1,(a3)+
                 move.w  d0,(a3)+
                 move.w  a3,GFX_SPR_TABLE_TAIL-$1000000(a1)
-end:                                    ; CODE XREF: gfx_build_sprite_pieces_full+7C   j
+end:                                    ; CODE XREF: gfx_sprite_build_pieces_full+7C   j
                 rts
-; End of function gfx_build_sprite_pieces_full
-posbound_end1:                          ; CODE XREF: gfx_build_sprite_pieces_dma_list+24   j
-                                        ; gfx_build_sprite_pieces_dma_list+2A   j
+; End of function gfx_sprite_build_pieces_full
+posbound_end1:                          ; CODE XREF: gfx_sprite_build_pieces_dma_list+24   j
+                                        ; gfx_sprite_build_pieces_dma_list+2A   j
                 rts
 ; End of function posbound_end1
-gfx_build_sprite_pieces_dma_list:       ; CODE XREF: gfx_build_player+30   j gfx_build_player+38   p
+gfx_sprite_build_pieces_dma_list:       ; CODE XREF: gfx_sprite_build_player+30   j
+                                        ; gfx_sprite_build_player+38   p
                 move.w  CRTL_SPRITE_FLAGS(a5),d7
                 move.w  d7,d2
                 andi.w  #%1111100000000000,d7
@@ -2086,12 +2091,12 @@ gfx_build_sprite_pieces_dma_list:       ; CODE XREF: gfx_build_player+30   j gfx
                 tst.b   CRTL_UNK3(a5)
                 bmi.s   jump0
                 sub.w   (SOME_Y_POS_OFFSET).w,d6
-jump0:                                  ; CODE XREF: gfx_build_sprite_pieces_dma_list+1A   j
+jump0:                                  ; CODE XREF: gfx_sprite_build_pieces_dma_list+1A   j
                 cmpi.w  #512,d6
                 bcc.s   posbound_end1
                 cmpi.w  #544,d5
                 bcc.s   posbound_end1
-                move.b  CRTL_UNK20(a5),d0
+                move.b  CRTL_SPR_SLOT(a5),d0
                 andi.w  #%0000000011111100,d0
                 movea.w d0,a1
                 movea.w GFX_SPR_TABLE_TAIL-$1000000(a1),a0
@@ -2101,11 +2106,11 @@ jump0:                                  ; CODE XREF: gfx_build_sprite_pieces_dma
                 lea     lea_jump0(pc),a0
                 bra.s   loop
 ; ---------------------------------------------------------------------------
-jump1:                                  ; CODE XREF: gfx_build_sprite_pieces_dma_list+42   j
+jump1:                                  ; CODE XREF: gfx_sprite_build_pieces_dma_list+42   j
                 lea     lea_jump1(pc),a0
                 subq.w  #8,d5
-loop:                                   ; CODE XREF: gfx_build_sprite_pieces_dma_list+48   j
-                                        ; gfx_build_sprite_pieces_dma_list+B4   j
+loop:                                   ; CODE XREF: gfx_sprite_build_pieces_dma_list+48   j
+                                        ; gfx_sprite_build_pieces_dma_list+B4   j
                 cmpi.b  #80,d4          ; sprite limit
                 bge.s   end
                 move.w  (a4)+,d3
@@ -2121,16 +2126,16 @@ loop:                                   ; CODE XREF: gfx_build_sprite_pieces_dma
                 neg.w   d0
                 move.w  d4,d1
                 lsr.w   #5,d1
-                andi.w  #%11000,d1
+                andi.w  #%0000000000011000,d1
                 addi.w  #9,d1
                 sub.w   d1,d0
-jump2:                                  ; CODE XREF: gfx_build_sprite_pieces_dma_list+6A   j
+jump2:                                  ; CODE XREF: gfx_sprite_build_pieces_dma_list+6A   j
                 add.w   d6,d0
                 move.w  d0,(a3)+
                 addq.b  #1,d4
                 move.w  d4,(a3)+
                 move.w  d3,d0
-                andi.w  #$1FFF,d0
+                andi.w  #%0001111111111111,d0
                 eor.w   d7,d0
                 add.w   d2,d0
                 move.w  d0,(a3)+
@@ -2138,27 +2143,27 @@ jump2:                                  ; CODE XREF: gfx_build_sprite_pieces_dma
                 ext.w   d0
                 jmp     (a0)
 ; ---------------------------------------------------------------------------
-lea_jump1:                              ; DATA XREF: gfx_build_sprite_pieces_dma_list:jump1   o
+lea_jump1:                              ; DATA XREF: gfx_sprite_build_pieces_dma_list:jump1   o
                 neg.w   d0
                 move.b  -6(a4),d1
                 add.w   d1,d1
                 andi.w  #$18,d1
                 sub.w   d1,d0
-lea_jump0:                              ; DATA XREF: gfx_build_sprite_pieces_dma_list+44   o
+lea_jump0:                              ; DATA XREF: gfx_sprite_build_pieces_dma_list+44   o
                 add.w   d5,d0
                 bmi.s   jump3
-                andi.w  #$1FF,d0
+                andi.w  #%0000000111111111,d0
                 bne.s   jump4
-jump3:                                  ; CODE XREF: gfx_build_sprite_pieces_dma_list+A6   j
+jump3:                                  ; CODE XREF: gfx_sprite_build_pieces_dma_list+A6   j
                 moveq   #1,d0
-jump4:                                  ; CODE XREF: gfx_build_sprite_pieces_dma_list+AC   j
+jump4:                                  ; CODE XREF: gfx_sprite_build_pieces_dma_list+AC   j
                 move.w  d0,(a3)+
                 add.w   d3,d3
                 bcc.s   loop
                 move.w  a3,GFX_SPR_TABLE_TAIL-$1000000(a1)
-end:                                    ; CODE XREF: gfx_build_sprite_pieces_dma_list+54   j
+end:                                    ; CODE XREF: gfx_sprite_build_pieces_dma_list+54   j
                 rts
-; End of function gfx_build_sprite_pieces_dma_list
+; End of function gfx_sprite_build_pieces_dma_list
 posbound_end2:                          ; CODE XREF: sub_2442+24   j sub_2442+2A   j
                 rts
 ; End of function posbound_end2
@@ -2177,7 +2182,7 @@ jump0:                                  ; CODE XREF: sub_2442+1A   j
                 bcc.s   posbound_end2
                 cmpi.w  #544,d5
                 bcc.s   posbound_end2
-                move.b  CRTL_UNK20(a5),d0
+                move.b  CRTL_SPR_SLOT(a5),d0
                 andi.w  #%0000000011111100,d0
                 movea.w d0,a1
                 movea.w GFX_SPR_TABLE_TAIL-$1000000(a1),a0
@@ -2277,15 +2282,15 @@ loc_252C:                               ; CODE XREF: _sub_2500+1C   j _sub_2500+
 ; End of function _sub_2500
 sub_254A:
                 move.b  9(a5),d0
-                beq.w   loc_2562
+                beq.w   jump0
                 addq.b  #1,d0
                 beq.w   end
                 subq.b  #1,9(a5)
-                beq.w   loc_2570
+                beq.w   jump1
 end:                                    ; CODE XREF: sub_254A+A   j
                 rts
 ; ---------------------------------------------------------------------------
-loc_2562:                               ; CODE XREF: sub_254A+4   j
+jump0:                                  ; CODE XREF: sub_254A+4   j
                 move.w  CRTL_UNKC(a5),d0
                 bra.w   update_end
 ; ---------------------------------------------------------------------------
@@ -2293,7 +2298,7 @@ loop:                                   ; CODE XREF: sub_254A+30   j
                 move.w  d1,d0
                 bra.w   update_end
 ; ---------------------------------------------------------------------------
-loc_2570:                               ; CODE XREF: sub_254A+12   j
+jump1:                                  ; CODE XREF: sub_254A+12   j
                 move.w  CRTL_UNKC(a5),d0
                 addq.w  #6,d0
 update_end:                             ; CODE XREF: sub_254A+1C   j sub_254A+22   j
@@ -2375,7 +2380,7 @@ loc_2632:                               ; CODE XREF: _sub_25CE+E   j
                 movea.l a4,a0
                 rts
 ; End of function _sub_25CE
-gfx_read_data:                          ; CODE XREF: hblank_fx_0x3C+20   p hblank_fx_0x20+1E   p ...
+gfx_read_data:                          ; CODE XREF: raster_fx_0x3C+20   p raster_fx_0x20+1E   p ...
                 move.w  (a0)+,d0
                 bmi.w   end             ; if word read is negative, stop reading
                 lsl.w   #2,d0
@@ -2552,7 +2557,7 @@ cpy_loop1:                              ; CODE XREF: gfx_decompress_rle_vram+8A 
                 move    (sp)+,sr
                 rts
 ; End of function gfx_decompress_rle_vram
-gfx_read_data_smth:                     ; CODE XREF: gfx_read_data_reset+16   p sub_49CE+3C   p ...
+gfx_read_data_reset_prog:               ; CODE XREF: gfx_read_data_reset+16   p sub_49CE+3C   p ...
                 move.w  (a0)+,d0
                 bmi.w   end
                 bset    #$F,d0
@@ -2568,7 +2573,7 @@ gfx_read_data_smth:                     ; CODE XREF: gfx_read_data_reset+16   p 
                 beq.w   bit_1
                 btst    #2,d0
                 bne.w   bit_2
-loop:                                   ; CODE XREF: gfx_read_data_smth+6E   j
+loop:                                   ; CODE XREF: gfx_read_data_reset_prog+6E   j
                 moveq   #0,d1
                 move.b  (a1),d1
                 addq.w  #1,d1
@@ -2581,7 +2586,7 @@ loop:                                   ; CODE XREF: gfx_read_data_smth+6E   j
                 move.l  a1,(tldcmp_src).w
                 bra.w   clear_tldcmp_buf
 ; ---------------------------------------------------------------------------
-bit_0:                                  ; CODE XREF: gfx_read_data_smth+14   j
+bit_0:                                  ; CODE XREF: gfx_read_data_reset_prog+14   j
                 moveq   #0,d1
                 move.w  (a0)+,d1
                 move.l  d1,(tldcmp_dest).w
@@ -2592,20 +2597,22 @@ bit_0:                                  ; CODE XREF: gfx_read_data_smth+14   j
                 beq.s   loop
                 bra.w   bit_2
 ; ---------------------------------------------------------------------------
-bit_1:                                  ; CODE XREF: gfx_read_data_smth+28   j gfx_read_data_smth+66   j
+bit_1:                                  ; CODE XREF: gfx_read_data_reset_prog+28   j
+                                        ; gfx_read_data_reset_prog+66   j
                 move.w  (a1)+,(tldcmp_data_len).w
                 move.l  a1,(tldcmp_src).w
                 rts
 ; ---------------------------------------------------------------------------
-bit_2:                                  ; CODE XREF: gfx_read_data_smth+30   j gfx_read_data_smth+70   j
+bit_2:                                  ; CODE XREF: gfx_read_data_reset_prog+30   j
+                                        ; gfx_read_data_reset_prog+70   j
                 moveq   #0,d1
                 move.w  (a1)+,d1
                 move.l  a1,(tldcmp_src).w
                 adda.l  d1,a1
                 move.l  a1,(tldcmp_bits_remaining).w
-end:                                    ; CODE XREF: gfx_read_data_smth+2   j
+end:                                    ; CODE XREF: gfx_read_data_reset_prog+2   j
                 rts
-; End of function gfx_read_data_smth
+; End of function gfx_read_data_reset_prog
 gfx_read_data_reset:                    ; CODE XREF: Reset+266   p
                 move.w  (tldcmp_cmp_type).w,d0
                 beq.w   end
@@ -2615,7 +2622,7 @@ main_loop:                              ; CODE XREF: gfx_read_data_reset+1E   j
                 add.w   d0,d0           ; quadruple value in d0
                 movea.l jsr_tbl_288C(pc,d0.w),a3
                 jsr     (a3)            ; switch 8 cases
-                bsr.w   gfx_read_data_smth
+                bsr.w   gfx_read_data_reset_prog
                 cmpi.w  #$FFFF,d0       ; end of stream = 0xFFFF
                 bne.s   main_loop
                 clr.w   (tldcmp_cmp_type).w
@@ -2687,9 +2694,9 @@ loop:                                   ; CODE XREF: tldcomp_ghd_cpy_ram_dma+44 
                 lea     (tldcmp_output_buffer_1).w,a2
                 move.w  #$10,d2
                 cmp.w   d2,d0
-                bge.w   jump0
+                bge.w   greater_than_16
                 move.w  d0,d2
-jump0:                                  ; CODE XREF: tldcomp_ghd_cpy_ram_dma+16   j
+greater_than_16:                        ; CODE XREF: tldcomp_ghd_cpy_ram_dma+16   j
                 move.w  d2,d1
                 asl.w   #5,d1
                 sub.w   d2,d0
@@ -2699,7 +2706,7 @@ dcmp_loop:                              ; CODE XREF: tldcomp_ghd_cpy_ram_dma+2C 
                 bsr.w   tldcmp_copy_ram
                 dbf     d2,dcmp_loop
                 tst.w   d0
-                beq.w   jump1
+                beq.w   is_zero
                 lea     (tldcmp_output_buffer_1).w,a2
                 bsr.w   dma_queue_prepend_2C62
 clear_loop:                             ; CODE XREF: tldcomp_ghd_cpy_ram_dma+42   j
@@ -2707,7 +2714,7 @@ clear_loop:                             ; CODE XREF: tldcomp_ghd_cpy_ram_dma+42 
                 bne.s   clear_loop
                 bra.s   loop
 ; ---------------------------------------------------------------------------
-jump1:                                  ; CODE XREF: tldcomp_ghd_cpy_ram_dma+32   j
+is_zero:                                ; CODE XREF: tldcomp_ghd_cpy_ram_dma+32   j
                 lea     (tldcmp_output_buffer_1).w,a2
                 bsr.w   dma_queue_prepend_2C62
 clear_loop1:                            ; CODE XREF: tldcomp_ghd_cpy_ram_dma+52   j
@@ -3098,7 +3105,7 @@ dma_queue_prepend_2C62:                 ; CODE XREF: tldcomp_cpy_ram_dma:prepend
                                         ; tldcomp_ghd_cpy_ram_dma+3A   p ...
                 move    sr,-(sp)
                 move    #DISABLE_INTR,sr
-                movea.w (DMA_QUEUE_PTR0).w,a5
+                movea.w (DMA_QUEUE_PTR_F70C).w,a5
                 move.w  a3,d7
                 rol.w   #2,d7
                 andi.w  #%0000000000000011,d7
@@ -3111,36 +3118,36 @@ dma_queue_prepend_2C62:                 ; CODE XREF: tldcomp_cpy_ram_dma:prepend
                 move.l  a2,d7
                 andi.l  #$00FFFFFF,d7
                 lsr.l   #1,d7
-                move.w  #$9500,d6
+                move.w  #VDPR_DMASRC_L,d6
                 move.b  d7,d6
                 move.w  d6,-(a5)
                 lsr.l   #8,d7
-                move.w  #$9600,d6
+                move.w  #VDPR_DMASRC_M,d6
                 move.b  d7,d6
                 move.w  d6,-(a5)
                 lsr.l   #8,d7
-                move.w  #$9700,d6
+                move.w  #VDPR_DMASRC_H,d6
                 move.b  d7,d6
                 move.w  d6,-(a5)
                 move.w  #AUTO_INC_2,-(a5)
                 move.w  d1,d7
                 lsr.w   #1,d7
-                move.w  #$9300,d6
+                move.w  #VDPR_DMALEN_L,d6
                 move.b  d7,d6
                 move.w  d6,-(a5)
                 lsr.w   #8,d7
-                move.w  #$9400,d6
+                move.w  #VDPR_DMALEN_H,d6
                 move.b  d7,d6
                 move.w  d6,-(a5)
                 adda.w  d1,a2
                 adda.w  d1,a3
                 move.b  #1,(DMA_QUEUE_STATUS).w
-                move.w  a5,(DMA_QUEUE_PTR0).w
+                move.w  a5,(DMA_QUEUE_PTR_F70C).w
                 move    (sp)+,sr
                 rts
 ; End of function dma_queue_prepend_2C62
 _dma_queue_prepend_2CD8:
-                movea.w (DMA_QUEUE_PTR0).w,a1
+                movea.w (DMA_QUEUE_PTR_F70C).w,a1
                 move.w  d0,-(sp)
                 move.w  d0,d2
                 rol.w   #2,d2
@@ -3155,27 +3162,27 @@ _dma_queue_prepend_2CD8:
                 move.l  a0,d0
                 andi.l  #$FFFFFF,d0
                 lsr.l   #1,d0
-                move.w  #$9500,d2
+                move.w  #VDPR_DMASRC_L,d2
                 move.b  d0,d2
                 move.w  d2,-(a1)
                 lsr.l   #8,d0
-                move.w  #$9600,d2
+                move.w  #VDPR_DMASRC_M,d2
                 move.b  d0,d2
                 move.w  d2,-(a1)
                 lsr.l   #8,d0
-                move.w  #$9700,d2
+                move.w  #VDPR_DMASRC_H,d2
                 move.b  d0,d2
                 move.w  d2,-(a1)
                 move.w  #AUTO_INC_2,-(a1)
                 lsr.w   #1,d1
-                move.w  #$9300,d2
+                move.w  #VDPR_DMALEN_L,d2
                 move.b  d1,d2
                 move.w  d2,-(a1)
                 lsr.w   #8,d1
-                move.w  #$9400,d2
+                move.w  #VDPR_DMALEN_H,d2
                 move.b  d1,d2
                 move.w  d2,-(a1)
                 move.w  (sp)+,d0
-                move.w  a1,(DMA_QUEUE_PTR0).w
+                move.w  a1,(DMA_QUEUE_PTR_F70C).w
                 rts
 ; End of function _dma_queue_prepend_2CD8

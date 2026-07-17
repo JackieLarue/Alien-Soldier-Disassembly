@@ -219,7 +219,7 @@ stru_E953C:     dc.w word_E90C2-*       ; field_0 ; DATA XREF: update_ent_C3+20 
                 dc.w     2              ; field_2
                 dc.w word_E90BC-*       ; field_0
                 dc.w   $FF              ; field_2
-stru_E9560:     dc.w word_E90C2-*       ; field_0 ; DATA XREF: sub_17642:loc_17664   o sub_17678:loc_1768C   o ...
+stru_E9560:     dc.w word_E90C2-*       ; field_0 ; DATA XREF: sub_17642:loop   o sub_17678:loop   o ...
                 dc.w     1              ; field_2
                 dc.w word_E90C8-*       ; field_0
                 dc.w     1              ; field_2
@@ -3274,36 +3274,36 @@ word_ECDCA:     dc.w  $961, $100, $4EC  ; DATA XREF: sub_55518+10   o
                 dc.w  $956, $200,$ECEC
                 dc.w  $959, $D00, $4F4
                 dc.w $894A, $E00,$ECF4
-word_ECDE2:     dc.w $4800, $600,$E0F8  ; DATA XREF: ROM:stru_ECEAC   o
+word_ECDE2:     dc.w $4800, $600,$E0F8  ; DATA XREF: ROM:seven_force_ECEAC   o
                 dc.w $4806, $900,$F8F8
                 dc.w $C80C, $600, $8F8
-word_ECDF4:     dc.w $4824,    0,$1007  ; DATA XREF: ROM:stru_ECE90   o
+word_ECDF4:     dc.w $4824,    0,$1007  ; DATA XREF: ROM:seven_force_ECE90   o
                 dc.w $4825, $C00,$18EF
                 dc.w $481E, $600,  $F7
                 dc.w $481C, $400,$FFF7
                 dc.w $4818, $C00,$F7EF
                 dc.w $C812, $600,$DFF7
-word_ECE18:     dc.w $483C, $100,$10F2  ; DATA XREF: ROM:stru_ECE90   o
+word_ECE18:     dc.w $483C, $100,$10F2  ; DATA XREF: ROM:seven_force_ECE90   o
                 dc.w $4834, $700,  $FA
                 dc.w $4832, $400,$FBF6
                 dc.w $C82A, $700,$DBF6
-word_ECE30:     dc.w $4848, $700,  $FA  ; DATA XREF: ROM:stru_ECE90   o
+word_ECE30:     dc.w $4848, $700,  $FA  ; DATA XREF: ROM:seven_force_ECE90   o
                 dc.w $4846, $400,$FBF6
                 dc.w $C83E, $700,$DBF6
-word_ECE42:     dc.w $4861, $C00,$18F1  ; DATA XREF: ROM:stru_ECE90   o
+word_ECE42:     dc.w $4861, $C00,$18F1  ; DATA XREF: ROM:seven_force_ECE90   o
                 dc.w $485B, $600,  $F9
                 dc.w $4859, $400,  $F6
                 dc.w $4856, $800,$F8F6
                 dc.w $C850, $600,$E0F6
-word_ECE60:     dc.w $4869, $800,$18F4  ; DATA XREF: ROM:stru_ECE90   o
+word_ECE60:     dc.w $4869, $800,$18F4  ; DATA XREF: ROM:seven_force_ECE90   o
                 dc.w $4867, $400,$10F4
                 dc.w $4865, $100,  $FC
                 dc.w $4846, $400,$FBF6
                 dc.w $C83E, $700,$DBF6
-word_ECE7E:     dc.w $486C, $700,  $F8  ; DATA XREF: ROM:stru_ECE90   o
+word_ECE7E:     dc.w $486C, $700,  $F8  ; DATA XREF: ROM:seven_force_ECE90   o
                 dc.w $4832, $400,$FBF6
                 dc.w $C82A, $700,$DBF6
-stru_ECE90:     dc.w word_ECDF4-*       ; field_0 ; DATA XREF: update_ent_104+D4   o seven_force_0+7C   o ...
+seven_force_ECE90:dc.w word_ECDF4-*       ; field_0 ; DATA XREF: update_ent_104+D4   o seven_force_0+7C   o ...
                 dc.w     9              ; field_2
                 dc.w word_ECE18-*       ; field_0
                 dc.w     8              ; field_2
@@ -3315,9 +3315,9 @@ stru_ECE90:     dc.w word_ECDF4-*       ; field_0 ; DATA XREF: update_ent_104+D4
                 dc.w     8              ; field_2
                 dc.w word_ECE7E-*       ; field_0
                 dc.w     8              ; field_2
-                dc.w stru_ECE90-*       ; field_0
+                dc.w seven_force_ECE90-*; field_0
                 dc.w     0              ; field_2
-stru_ECEAC:     dc.w word_ECDE2-*       ; field_0 ; DATA XREF: update_ent_104+40   o update_ent_104+128   o ...
+seven_force_ECEAC:dc.w word_ECDE2-*       ; field_0 ; DATA XREF: update_ent_104+40   o update_ent_104+128   o ...
                 dc.w $FF                ; field_2
                 dc.w   $3A, $400, $FF0
                 dc.w  $83A, $400, $F00

@@ -25,7 +25,7 @@ update_ent_0F:                          ; DATA XREF: ROM:ent_update_fns   o
                 move.w  (word_FF803C).w,d0
                 cmp.w   $48(a5),d0
                 bne.s   end
-                movea.w #(PLAYER_STRUCT_COPY_IDK-M68K_RAM),a0
+                movea.w #(stru_FFC2C0-M68K_RAM),a0
                 btst    #0,(word_FFA000+1).w
                 bne.s   jump
                 bclr    #7,2(a0)

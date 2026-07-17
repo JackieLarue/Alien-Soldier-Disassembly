@@ -13,7 +13,7 @@ pstate_unused:                          ; CODE XREF: set_bit_7_unk2_if_FF183C_no
 end:                                    ; jumptable 00015060 cases 22-24
                 rts
 ; End of function set_bit_7_unk2_if_FF183C_non_neg
-update_player:                          ; CODE XREF: gamemode_play_stage:loc_1C70E   p sub_1EE3C   p ...
+update_player:                          ; CODE XREF: gamemode_play_stage:jump5   p sub_1EE3C   p ...
                 movea.w #(PLAYER_STRUCT-M68K_RAM),a5
                 btst    #1,(STAGE_STATE_UNK).w
                 bne.w   clear_player_flags_off0_off2
@@ -129,14 +129,14 @@ pstate_pit:                             ; CODE XREF: update_player+94   j
                 jsr     (play_sfx_id_2).l
                 move.b  #%1110011,(PCRTL_MASK).w
                 move.w  #$8000,(PL_DEATH_STATE).w
-                jsr     (clear_BFC0_0x660_bytes).l
+                jsr     (clear_obj_buffer0_0x660_bytes).l
                 move.b  #1,(word_FF8224).w
                 move.b  #1,(word_FF8224+1).w
                 move.w  #DROWN,CRTL_PSTATE(a5)
                 move.w  #$C100,CRTL_UNK2(a5)
                 bclr    #PFLAG_YDIR,CRTL_SPRITE_FLAGS(a5)
                 move.b  CRTL_SPRITE_FLAGS(a5),CRTL_UNK4C(a5)
-                move.b  CRTL_UNK20(a5),CRTL_UNK4D(a5)
+                move.b  CRTL_SPR_SLOT(a5),CRTL_UNK4D(a5)
                 bset    #PFLAG_XDIR,CRTL_SPRITE_FLAGS(a5)
                 bset    #PFLAG_BOSS_FIGHT,CRTL_SPRITE_FLAGS(a5)
                 move.b  #$81,CRTL_UNK21(a5)
@@ -149,7 +149,7 @@ pstate_drown:                           ; CODE XREF: player_state_machine+E   j
                                         ; DATA XREF: ROM:pstate_jmp_tbl   o
                 bset    #5,(byte_FF8244).w ; jumptable 00015060 case 27
                 bset    #0,(byte_FF8244).w
-                move.b  #8,CRTL_UNK20(a5)
+                move.b  #8,CRTL_SPR_SLOT(a5)
                 btst    #0,(word_FFA000+1).w
                 bne.s   loc_15152
                 subq.w  #1,(HEALTH).w
@@ -182,7 +182,7 @@ loc_15186:                              ; CODE XREF: pstate_pit+A4   j pstate_pi
                 clr.w   CRTL_UNK48(a5)
                 clr.w   CRTL_UNK4A(a5)
                 move.b  CRTL_UNK4C(a5),CRTL_SPRITE_FLAGS(a5)
-                move.b  CRTL_UNK4D(a5),CRTL_UNK20(a5)
+                move.b  CRTL_UNK4D(a5),CRTL_SPR_SLOT(a5)
                 move.w  #368,CRTL_YPOS(a5)
                 move.w  #$FF80,CRTL_UNK52(a5)
 pstate_drown_recover:                   ; CODE XREF: player_state_machine+E   j
@@ -226,7 +226,7 @@ pstate_idle:                            ; CODE XREF: player_state_machine+E   j
                 bne.w   loc_15286
                 btst    #button_B,CRTL_DOWN(a5)
                 beq.s   loc_1525A
-                tst.w   (FIRING_MODE).w
+                tst.w   (SHOOTING_MODE).w
                 bne.s   loc_15278
 loc_1525A:                              ; CODE XREF: pstate_idle+34   j
                 btst    #button_DOWN,CRTL_DOWN(a5)
@@ -379,7 +379,7 @@ pstate_crouch:                          ; CODE XREF: player_state_machine+E   j
                 move.w  #$FFFF,CRTL_UNK48(a5)
                 btst    #button_B,CRTL_DOWN(a5)
                 beq.s   loc_15456
-                tst.w   (FIRING_MODE).w
+                tst.w   (SHOOTING_MODE).w
                 bne.s   loc_15460
 loc_15456:                              ; CODE XREF: pstate_crouch+46   j
                 btst    #button_DOWN,CRTL_DOWN(a5)
@@ -525,7 +525,7 @@ pstate_force_choose:                    ; CODE XREF: player_state_machine+E   j
 ; End of function pstate_force_choose
 fire_mode_change:                       ; CODE XREF: fire_mode_check+E   j air_hang_fmove_mode_check+10   p
                 move.b  #%1111111,(PCRTL_MASK).w
-                eori.w  #2,(FIRING_MODE).w
+                eori.w  #2,(SHOOTING_MODE).w
                 move.b  #$A3,d0
                 jsr     (play_sfx_id_2).l
                 moveq   #0,d0
@@ -534,14 +534,14 @@ fire_mode_change:                       ; CODE XREF: fire_mode_check+E   j air_h
 sub_1564C:                              ; CODE XREF: pstate_idle+4C   j pstate_idle+56   j
                 btst    #button_B,CRTL_DOWN(a5)
                 beq.s   loc_15694
-                tst.w   (FIRING_MODE).w
+                tst.w   (SHOOTING_MODE).w
                 beq.s   loc_1566C
                 rts
 ; ---------------------------------------------------------------------------
 loc_1565C:                              ; CODE XREF: pstate_skid+44   j pstate_skid+4E   j ...
                 btst    #button_B,CRTL_DOWN(a5)
                 beq.s   loc_15694
-                tst.w   (FIRING_MODE).w
+                tst.w   (SHOOTING_MODE).w
                 bne.w   sub_151EE
 loc_1566C:                              ; CODE XREF: sub_1564C+C   j
                 btst    #button_RIGHT,CRTL_DOWN(a5)
@@ -583,7 +583,7 @@ pstate_walk:                            ; CODE XREF: player_state_machine+E   j
                 bne.w   sub_153D4
                 btst    #button_B,CRTL_DOWN(a5)
                 beq.s   loc_156FC
-                tst.w   (FIRING_MODE).w
+                tst.w   (SHOOTING_MODE).w
                 bne.w   set_state_skid
 loc_156FC:                              ; CODE XREF: sub_1564C+A6   j
                 btst    #button_LEFT,CRTL_DOWN(a5)
@@ -716,7 +716,7 @@ loc_158A0:                              ; CODE XREF: pstate_pnx_end+12   j pstat
                 rts
 ; End of function pstate_pnx_end
 sub_158C6:                              ; CODE XREF: unused_pnx_state+74   p
-                movea.w #(PLAYER_STRUCT_COPY_IDK-M68K_RAM),a0
+                movea.w #(stru_FFC2C0-M68K_RAM),a0
                 moveq   #0,d7
                 bsr.s   sub_158D4
 next_entry:
@@ -731,10 +731,10 @@ sub_158D4:                              ; CODE XREF: sub_158C6+6   p
                 move.w  CRTL_SPRITE_FLAGS(a5),d0
                 andi.w  #$FFFF,d0
                 move.w  d0,CRTL_SPRITE_FLAGS(a0)
-                move.b  CRTL_UNK20(a5),CRTL_UNK20(a0)
-                subq.b  #4,CRTL_UNK20(a0)
+                move.b  CRTL_SPR_SLOT(a5),CRTL_SPR_SLOT(a0)
+                subq.b  #4,CRTL_SPR_SLOT(a0)
                 bpl.s   loc_15906
-                clr.b   CRTL_UNK20(a0)
+                clr.b   CRTL_SPR_SLOT(a0)
 loc_15906:                              ; CODE XREF: sub_158D4+2C   j
                 move.w  CRTL_XPOS(a5),CRTL_XPOS(a0)
                 move.w  CRTL_YPOS(a5),CRTL_YPOS(a0)
@@ -808,7 +808,7 @@ pstate_dash:                            ; CODE XREF: player_state_machine+E   j
 loc_159F0:                              ; CODE XREF: pstate_dash+4   j pstate_dash+A   j
                 bsr.w   sub_16D40
 loc_159F4:                              ; CODE XREF: pstate_dash:loc_15A6C   j
-                clr.w   (word_FFC5C0).w
+                clr.w   (stru_FFC5C0.unk0).w
                 bclr    #0,(COUNTER_FLAG).w
                 bclr    #6,CRTL_UNK21(a5)
                 bclr    #4,CRTL_UNK23(a5)
@@ -1291,7 +1291,7 @@ sub_15F6A:                              ; CODE XREF: pstate_airtime+9C   j
                 clr.w   CRTL_UNK4A(a5)
                 move.w  #5,CRTL_UNK4C(a5)
                 move.b  #1,(word_FF8224+1).w
-                movea.w #(PLAYER_STRUCT_COPY_IDK-M68K_RAM),a0
+                movea.w #(stru_FFC2C0-M68K_RAM),a0
                 moveq   #7,d7
                 jsr     (clear_96_byte_increments).l
                 move.b  #$B0,d0
@@ -1530,7 +1530,7 @@ player_162A8:                           ; CODE XREF: update_player+64   p pstate
                 move.b  #$7F,(PCRTL_MASK).w
                 bclr    #PFLAG_YDIR,CRTL_SPRITE_FLAGS(a5)
                 move.w  #$8000,(PL_DEATH_STATE).w
-                jsr     (clear_BFC0_0x660_bytes).l
+                jsr     (clear_obj_buffer0_0x660_bytes).l
                 move.w  #HURT,CRTL_PSTATE(a5)
                 move.w  #$C,CRTL_UNK48(a5)
                 tst.w   CRTL_UNK5E(a5)
@@ -1655,7 +1655,7 @@ pstate_rev_idle:                        ; CODE XREF: player_state_machine+E   j
                 bne.w   loc_1646C
                 btst    #button_B,CRTL_DOWN(a5)
                 beq.s   loc_16440
-                tst.w   (FIRING_MODE).w
+                tst.w   (SHOOTING_MODE).w
                 bne.s   loc_1645E
 loc_16440:                              ; CODE XREF: pstate_rev_idle+36   j
                 btst    #button_UP,CRTL_DOWN(a5)
@@ -1753,7 +1753,7 @@ loc_16564:                              ; CODE XREF: pstate_rev_crouch+28   j
                 move.w  #$FFFF,CRTL_UNK48(a5)
                 btst    #button_B,CRTL_DOWN(a5)
                 beq.s   loc_1658C
-                tst.w   (FIRING_MODE).w
+                tst.w   (SHOOTING_MODE).w
                 bne.s   loc_16596
 loc_1658C:                              ; CODE XREF: pstate_rev_crouch+58   j
                 btst    #button_UP,CRTL_DOWN(a5)
@@ -1900,7 +1900,7 @@ pstate_rev_force_choose:                ; CODE XREF: player_state_machine+E   j
                 bra.w   sub_16EC8
 ; ---------------------------------------------------------------------------
 loc_1676E:                              ; CODE XREF: reverse_fmove_check+E   j
-                eori.w  #2,(FIRING_MODE).w
+                eori.w  #2,(SHOOTING_MODE).w
                 move.b  #$A3,d0
                 jsr     (play_sfx_id_2).l
                 moveq   #0,d0
@@ -1909,14 +1909,14 @@ loc_1676E:                              ; CODE XREF: reverse_fmove_check+E   j
 sub_16782:                              ; CODE XREF: pstate_rev_idle+4E   j pstate_rev_idle+58   j
                 btst    #button_B,CRTL_DOWN(a5)
                 beq.s   loc_167CA
-                tst.w   (FIRING_MODE).w
+                tst.w   (SHOOTING_MODE).w
                 beq.s   loc_167A2
                 rts
 ; ---------------------------------------------------------------------------
 loc_16792:                              ; CODE XREF: pstate_rev_skid+46   j pstate_rev_skid+50   j ...
                 btst    #button_B,CRTL_DOWN(a5)
                 beq.s   loc_167CA
-                tst.w   (FIRING_MODE).w
+                tst.w   (SHOOTING_MODE).w
                 bne.w   pstate_unk4A_0
 loc_167A2:                              ; CODE XREF: sub_16782+C   j
                 btst    #button_RIGHT,CRTL_DOWN(a5)
@@ -1960,7 +1960,7 @@ pstate_rev_walk:                        ; CODE XREF: player_state_machine+E   j
                 bne.w   set_rev_crouch
                 btst    #button_B,CRTL_DOWN(a5)
                 beq.s   loc_16834
-                tst.w   (FIRING_MODE).w
+                tst.w   (SHOOTING_MODE).w
                 bne.w   sub_165A4
 loc_16834:                              ; CODE XREF: pstate_rev_walk+3C   j
                 btst    #button_LEFT,CRTL_DOWN(a5)
@@ -2063,14 +2063,14 @@ pstate_pnx_start:                       ; CODE XREF: player_state_machine+E   j
                 move.w  #$CD00,CRTL_UNK2(a5)
                 addq.w  #2,CRTL_PSTATE(a5)
                 clr.w   CRTL_UNK48(a5)
-                jsr     (clear_BFC0_0x660_bytes).l
+                jsr     (clear_obj_buffer0_0x660_bytes).l
                 move.w  #$78,CRTL_XPOS(a5) ; 'x'
                 move.w  #$100,CRTL_YPOS(a5)
                 move.l  #$41000,CRTL_XSPD(a5)
                 move.l  #$18000,CRTL_YSPD(a5)
                 bset    #PFLAG_XDIR,CRTL_SPRITE_FLAGS(a5)
                 bclr    #PFLAG_YDIR,CRTL_SPRITE_FLAGS(a5)
-                movea.w #(word_FFC5C0-M68K_RAM),a0
+                movea.w #(stru_FFC5C0-M68K_RAM),a0
                 move.w  #$230,(a0)
                 move.b  #$54,$21(a0) ; 'T'
                 move.w  #$4000,2(a0)
@@ -2079,7 +2079,7 @@ pstate_pnx_start:                       ; CODE XREF: player_state_machine+E   j
                 andi.w  #$FFFF,d0
                 move.w  d0,$E(a0)
                 eori.w  #$1000,$E(a0)
-                move.b  CRTL_UNK20(a5),$20(a0)
+                move.b  CRTL_SPR_SLOT(a5),$20(a0)
                 move.w  CRTL_XPOS(a5),$10(a0)
                 move.w  CRTL_YPOS(a5),$14(a0)
                 move.b  #$E0,d0
@@ -2099,7 +2099,7 @@ pstate_pnx_unk0:                        ; CODE XREF: player_state_machine+E   j
 loc_16A0E:                              ; CODE XREF: pstate_pnx_start+A2   j
                 bclr    #6,CRTL_UNK21(a5)
                 bclr    #4,CRTL_UNK23(a5)
-                jsr     (clear_BFC0_0x660_bytes).l
+                jsr     (clear_obj_buffer0_0x660_bytes).l
                 bclr    #0,(bounds_check_flag_FF8245).w
                 move.w  #$FFE0,CRTL_UNK52(a5)
                 move.l  #$68000,CRTL_XSPD(a5)
@@ -2125,7 +2125,7 @@ pstate_phoenix0:                        ; CODE XREF: player_state_machine+E   j
                 move.b  #%1110000,(PCRTL_MASK).w
                 bset    #0,(bounds_check_flag_FF8245).w
                 move.w  #$CD00,CRTL_UNK2(a5)
-                jsr     (clear_BFC0_0x660_bytes).l
+                jsr     (clear_obj_buffer0_0x660_bytes).l
                 move.w  #$120,CRTL_XPOS(a5)
                 move.w  #$100,CRTL_YPOS(a5)
                 bset    #PFLAG_XDIR,CRTL_SPRITE_FLAGS(a5)
@@ -2216,15 +2216,15 @@ pl_dma_queue_shenanigans:               ; CODE XREF: update_player+AE   p player
                 move.l  dword_16BB2(pc,d0.w),d0
                 btst    #PFLAG_YDIR,CRTL_SPRITE_FLAGS(a5)
                 beq.s   loc_16BAC
-                move.l  d0,(DMA_QUEUE_SRC0).w
-                move.l  d0,(DMA_QUEUE_SRC1).w
-                move.b  (DMA_QUEUE_SRC1).w,d1
+                move.l  d0,(DMA_QUEUE_SRC_8040).w
+                move.l  d0,(DMA_QUEUE_SRC_8044).w
+                move.b  (DMA_QUEUE_SRC_8044).w,d1
                 neg.b   d1
-                move.b  d1,(DMA_QUEUE_SRC0+1).w
-                move.b  (DMA_QUEUE_SRC1+1).w,d1
+                move.b  d1,(DMA_QUEUE_SRC_8040+1).w
+                move.b  (DMA_QUEUE_SRC_8044+1).w,d1
                 neg.b   d1
-                move.b  d1,(DMA_QUEUE_SRC0).w
-                move.l  (DMA_QUEUE_SRC0).w,d0
+                move.b  d1,(DMA_QUEUE_SRC_8040).w
+                move.l  (DMA_QUEUE_SRC_8040).w,d0
 loc_16BAC:                              ; CODE XREF: pl_dma_queue_shenanigans+16   j
                 move.l  d0,CRTL_UNK28_Y(a5)
 end:                                    ; CODE XREF: pl_dma_queue_shenanigans+4   j
@@ -2286,7 +2286,7 @@ end:                                    ; CODE XREF: set_pl_dir_hover+16   j
                 rts
 ; End of function set_pl_dir_hover
 sub_16C62:                              ; CODE XREF: sub_177B6:loc_177D8   p sub_177B6+7A   p
-                movea.w #(ENTITY_BUFFER0-M68K_RAM),a0
+                movea.w #(OBJECT_BUFFER0-M68K_RAM),a0
                 moveq   #$B,d7
                 jmp     entity_get_flag0
 ; End of function sub_16C62
@@ -2305,13 +2305,13 @@ set_some_fmode_palette:                 ; CODE XREF: update_player+54   p player
 loc_16C8C:                              ; CODE XREF: set_some_fmode_palette+4   j set_some_fmode_palette+E   j ...
                 lea     pal_fmode_run(pc),a0
                 nop
-                tst.w   (FIRING_MODE).w
+                tst.w   (SHOOTING_MODE).w
                 beq.s   loc_16C9E
                 lea     pal_fmode_fixed(pc),a0
                 nop
 loc_16C9E:                              ; CODE XREF: set_some_fmode_palette+1C   j
                                         ; set_some_fmode_palette+28   j
-                movea.w #(PAL_2_COL_9-M68K_RAM),a1
+                movea.w #(PAL0_2_COL_9-M68K_RAM),a1
                 movea.w #(PAL1_2_COL_9-M68K_RAM),a2
                 move.l  (a0),(a1)+
                 move.l  (a0)+,(a2)+
@@ -2381,7 +2381,7 @@ set_firing_direction:                   ; CODE XREF: update_player+58   p player
                 tst.w   (CRTL_ENABLED).w
                 bne.w   end
                 move.b  CRTL_DOWN(a5),d1
-                move.w  (FIRING_MODE).w,d0
+                move.w  (SHOOTING_MODE).w,d0
                 beq.s   b_press_check
 b_held_check:
                 btst    #button_B,CRTL_DOWN(a5)
@@ -2427,7 +2427,7 @@ fdir_mapping:   dc.b   0,  6,  2,  0    ; DATA XREF: set_firing_direction:fire_d
                 dc.b   0,  7,  1,  0
                 dc.b   0,  0,  0,  0
 set_pl_dir_based_on_firedir:            ; CODE XREF: sub_151EE+2A   j sub_153D4+2E   j ...
-                tst.w   (FIRING_MODE).w
+                tst.w   (SHOOTING_MODE).w
                 bne.s   end             ; if firing mode is fixed, return
                 btst    #button_B,CRTL_DOWN(a5)
                 beq.s   end             ; if b is not being held down, return
@@ -2642,7 +2642,7 @@ word_1702E:     dc.w $FFFF,$FFFF,    0,$FFFF ; DATA XREF: sub_16FEC+3C   r
 off_1703A:      dc.l word_E8CC2,word_E8CDA,word_E8CEA,word_E8D12 ; DATA XREF: sub_16FEC:loc_17022   r
                 dc.l word_E8D2A,word_E8992
 sub_17052:                              ; CODE XREF: pstate_rev_idle+66   j
-                tst.w   (FIRING_MODE).w
+                tst.w   (SHOOTING_MODE).w
                 beq.s   loc_17072
                 lea     (word_198F2).l,a4
                 moveq   #0,d5
@@ -2660,7 +2660,7 @@ loc_17072:                              ; CODE XREF: sub_17052+4   j
                 bra.w   sub_17274
 ; End of function sub_17052
 sub_17086:                              ; CODE XREF: pstate_idle+64   j
-                tst.w   (FIRING_MODE).w
+                tst.w   (SHOOTING_MODE).w
                 beq.s   loc_170A6
                 lea     (word_198B2).l,a4
                 moveq   #0,d5
@@ -2680,7 +2680,7 @@ loc_170A6:                              ; CODE XREF: sub_17086+4   j
 sub_170BA:                              ; CODE XREF: pstate_rev_crouch+74   j pstate_unk26+76   j
                 tst.w   CRTL_UNK48(a5)
                 bpl.w   loc_17132
-                tst.w   (FIRING_MODE).w
+                tst.w   (SHOOTING_MODE).w
                 beq.s   loc_170E2
                 lea     (word_19902).l,a4
                 moveq   #0,d5
@@ -2700,7 +2700,7 @@ loc_170E2:                              ; CODE XREF: sub_170BA+C   j
 loc_170F6:                              ; CODE XREF: pstate_crouch+62   j pstate_land+7A   j
                 tst.w   CRTL_UNK48(a5)
                 bpl.w   sub_17146
-                tst.w   (FIRING_MODE).w
+                tst.w   (SHOOTING_MODE).w
                 beq.s   loc_1711E
                 lea     (word_198C2).l,a4
                 moveq   #0,d5
@@ -2889,7 +2889,7 @@ sub_17386:                              ; CODE XREF: sub_153BC:loc_153D0   j
                 move.w  #$E0,(word_FF8140).w
                 move.b  #$E0,(byte_FF8142).w
                 move.b  #8,(byte_FF8143).w
-                movea.w #(word_FFC5C0-M68K_RAM),a0
+                movea.w #(stru_FFC5C0-M68K_RAM),a0
                 move.w  #$1CC,(a0)
                 move.w  #$E900,2(a0)
                 move.b  #$50,$21(a0) ; 'P'
@@ -2919,7 +2919,7 @@ sub_173FA:                              ; CODE XREF: pstate_pnx_end+56   p rever
                 move.w  #$E0,(word_FF8140).w
                 move.b  #$20,(byte_FF8142).w ; ' '
                 move.b  #2,(byte_FF8143).w
-                movea.w #(word_FFC5C0-M68K_RAM),a0
+                movea.w #(stru_FFC5C0-M68K_RAM),a0
                 move.w  #$230,(a0)
                 move.b  #$54,$21(a0) ; 'T'
                 move.w  #$4000,2(a0)
@@ -2928,7 +2928,7 @@ sub_173FA:                              ; CODE XREF: pstate_pnx_end+56   p rever
                 andi.w  #$FFFF,d0
                 move.w  d0,$E(a0)
                 eori.w  #$1000,$E(a0)
-                move.b  CRTL_UNK20(a5),$20(a0)
+                move.b  CRTL_SPR_SLOT(a5),$20(a0)
                 move.w  CRTL_XPOS(a5),$10(a0)
                 move.w  CRTL_YPOS(a5),$14(a0)
                 tst.w   (DIFFICULTY).w
@@ -3011,12 +3011,12 @@ loop2:                                  ; CODE XREF: set_player_sprite+68   j
 ; End of function set_player_sprite
 sub_17514:                              ; CODE XREF: pstate_idle+14   p pstate_rev_idle+16   p ...
                 btst    #button_B,CRTL_DOWN(a5)
-                bne.w   locret_175B6
+                bne.w   end
                 move.w  (RAND_NUM+2).w,d0
                 andi.w  #$E000,d0
-                bne.w   locret_175B6
+                bne.w   end
                 bsr.w   entity_get_flag0_C320
-                bne.w   locret_175B6
+                bne.w   end
                 lea     (word_2AE58).l,a1
                 jsr     (update_ent_61_a0).l
                 lea     (word_1B514).l,a1
@@ -3033,8 +3033,8 @@ sub_17514:                              ; CODE XREF: pstate_idle+14   p pstate_r
                 asr.w   #1,d0
                 andi.w  #3,d0
                 asl.l   d0,d2
-                move.l  d1,$1C(a0)
-                move.l  d2,$18(a0)
+                move.l  d1,CRTL_YSPD(a0)
+                move.l  d2,CRTL_XSPD(a0)
                 movem.l a0,-(sp)
                 jsr     (random_number).l
                 movem.l (sp)+,a0
@@ -3042,7 +3042,7 @@ sub_17514:                              ; CODE XREF: pstate_idle+14   p pstate_r
                 andi.w  #$1F,d0
                 subi.w  #$10,d0
                 add.w   CRTL_XPOS(a5),d0
-                move.w  d0,$10(a0)
+                move.w  d0,CRTL_XPOS(a0)
                 moveq   #$10,d1
                 btst    #PFLAG_YDIR,CRTL_SPRITE_FLAGS(a5)
                 beq.s   loc_175A4
@@ -3052,16 +3052,16 @@ loc_175A4:                              ; CODE XREF: sub_17514+8C   j
                 andi.w  #$1F,d0
                 sub.w   d1,d0
                 add.w   CRTL_YPOS(a5),d0
-                move.w  d0,$14(a0)
-locret_175B6:                           ; CODE XREF: sub_17514+6   j sub_17514+12   j ...
+                move.w  d0,CRTL_YPOS(a0)
+end:                                    ; CODE XREF: sub_17514+6   j sub_17514+12   j ...
                 rts
 ; End of function sub_17514
 sub_175B8:
                 subq.w  #1,CRTL_UNK4A(a5)
-                bpl.w   locret_17640
+                bpl.w   end
                 move.w  #$FFFF,CRTL_UNK4A(a5)
                 btst    #CRTL_PSTATE,CRTL_DOWN(a5)
-                bne.w   locret_17640
+                bne.w   end
                 subq.w  #2,(GFX_HP_EMPTY_IDK).w
                 bpl.s   loc_175DA
                 clr.w   (GFX_HP_EMPTY_IDK).w
@@ -3073,48 +3073,48 @@ loc_175DA:                              ; CODE XREF: sub_175B8+1C   j
                 jsr     (play_sfx_id_2).l
 loc_175EE:                              ; CODE XREF: sub_175B8+2A   j
                 bsr.w   entity_get_flag0_C320
-                bne.w   locret_17640
+                bne.w   end
                 lea     (word_2AE58).l,a1
                 jsr     (update_ent_61_a0).l
                 lea     (word_1B514).l,a1
                 move.w  (RAND_NUM).w,d0
-                andi.w  #$1FE,d0
+                andi.w  #%0000000111111110,d0
                 move.w  -$80(a1,d0.w),d1
                 move.w  (a1,d0.w),d2
                 ext.l   d1
                 ext.l   d2
                 asl.l   #4,d1
                 asl.l   #4,d2
-                move.l  d1,$1C(a0)
-                move.l  d2,$18(a0)
+                move.l  d1,CRTL_YSPD(a0)
+                move.l  d2,CRTL_XSPD(a0)
                 asl.l   #3,d1
                 asl.l   #3,d2
-                move.w  CRTL_YPOS(a5),$14(a0)
-                sub.l   d1,$14(a0)
-                move.w  CRTL_XPOS(a5),$10(a0)
-                sub.l   d2,$10(a0)
-locret_17640:                           ; CODE XREF: sub_175B8+4   j sub_175B8+14   j ...
+                move.w  CRTL_YPOS(a5),CRTL_YPOS(a0)
+                sub.l   d1,CRTL_YPOS(a0)
+                move.w  CRTL_XPOS(a5),CRTL_XPOS(a0)
+                sub.l   d2,CRTL_XPOS(a0)
+end:                                    ; CODE XREF: sub_175B8+4   j sub_175B8+14   j ...
                 rts
 ; End of function sub_175B8
 sub_17642:                              ; CODE XREF: sub_15F6A+56   j
-                movea.w #(PLAYER_STRUCT_COPY_IDK-M68K_RAM),a0
+                movea.w #(stru_FFC2C0-M68K_RAM),a0
                 move.w  CRTL_XPOS(a5),d4
                 moveq   #3,d5
                 moveq   #2,d7
                 btst    #PFLAG_XDIR,CRTL_SPRITE_FLAGS(a5)
-                beq.s   loc_1765E
+                beq.s   jump
                 move.w  #$C0,d6
                 subq.w  #8,d4
-                bra.s   loc_17664
+                bra.s   loop
 ; ---------------------------------------------------------------------------
-loc_1765E:                              ; CODE XREF: sub_17642+12   j
+jump:                                   ; CODE XREF: sub_17642+12   j
                 addq.w  #8,d4
                 move.w  #$1E0,d6
-loc_17664:                              ; CODE XREF: sub_17642+1A   j sub_17642+30   j
-                move.l  #stru_E9560,8(a0)
+loop:                                   ; CODE XREF: sub_17642+1A   j sub_17642+30   j
+                move.l  #stru_E9560,CRTL_SPRITE_PTR(a0)
                 bsr.s   sub_176A0
                 addi.w  #$40,d6 ; '@'
-                dbf     d7,loc_17664
+                dbf     d7,loop
                 rts
 ; End of function sub_17642
 sub_17678:
@@ -3122,18 +3122,18 @@ sub_17678:
                 move.w  #$FFC0,d6
                 moveq   #4,d7
                 btst    #PFLAG_XDIR,CRTL_SPRITE_FLAGS(a5)
-                beq.s   loc_1768C
+                beq.s   loop
                 addi.w  #$80,d6
-loc_1768C:                              ; CODE XREF: sub_17678+E   j sub_17678+22   j
-                move.l  #stru_E9560,8(a0)
+loop:                                   ; CODE XREF: sub_17678+E   j sub_17678+22   j
+                move.l  #stru_E9560,CRTL_SPRITE_PTR(a0)
                 bsr.s   sub_176A0
                 addi.w  #$40,d6 ; '@'
-                dbf     d7,loc_1768C
+                dbf     d7,loop
                 rts
 ; End of function sub_17678
 sub_176A0:                              ; CODE XREF: sub_17642+2A   p sub_17678+1C   p
                 jsr     (sub_2A79E).l
-                move.b  CRTL_UNK20(a5),$20(a0)
+                move.b  CRTL_SPR_SLOT(a5),CRTL_SPR_SLOT(a0)
                 lea     (word_1B514).l,a1
                 andi.w  #$1FE,d6
                 move.w  -$80(a1,d6.w),d1
@@ -3142,11 +3142,11 @@ sub_176A0:                              ; CODE XREF: sub_17642+2A   p sub_17678+
                 ext.l   d2
                 asl.l   d5,d1
                 asl.l   d5,d2
-                move.l  d1,$1C(a0)
-                move.l  d2,$18(a0)
-                move.w  CRTL_YPOS(a5),$14(a0)
-                subq.w  #8,$14(a0)
-                move.w  d4,$10(a0)
+                move.l  d1,CRTL_YSPD(a0)
+                move.l  d2,CRTL_XSPD(a0)
+                move.w  CRTL_YPOS(a5),CRTL_YPOS(a0)
+                subq.w  #8,CRTL_YPOS(a0)
+                move.w  d4,CRTL_XPOS(a0)
                 lea     $60(a0),a0
                 rts
 ; End of function sub_176A0
@@ -3157,13 +3157,13 @@ word_176F2:     dc.w     0,   $C,  $10,   $C ; DATA XREF: sub_17274+14   o
                 dc.w     0,    8,    4,    8
 sub_17702:
                 tst.w   (HEALTH_SMTH).w
-                beq.w   locret_1771A
+                beq.w   end
                 tst.b   (byte_FF813E).w
                 bmi.s   loc_17728
                 subq.w  #1,(word_FF8268).w
                 bpl.s   loc_1771C
                 clr.w   (HEALTH_SMTH).w
-locret_1771A:                           ; CODE XREF: sub_17702+4   j
+end:                                    ; CODE XREF: sub_17702+4   j
                 rts
 ; ---------------------------------------------------------------------------
 loc_1771C:                              ; CODE XREF: sub_17702+12   j
@@ -3173,7 +3173,7 @@ loc_1771C:                              ; CODE XREF: sub_17702+12   j
 loc_17728:                              ; CODE XREF: sub_17702+C   j sub_17702+20   j
                 move.b  (HEALTH_SMTH).w,d0
                 andi.w  #$10,d0
-                addi.w  #-$3841,d0
+                addi.w  #$C7BF,d0
                 lea     (bcd_table).l,a0
                 move.w  (HEALTH_SMTH).w,d4
                 andi.w  #$FFF,d4
@@ -3185,9 +3185,9 @@ loc_17728:                              ; CODE XREF: sub_17702+C   j sub_17702+2
                 asr.w   #4,d2
                 andi.w  #$F,d2
                 andi.w  #$F,d3
-                addi.w  #-$383C,d1
-                addi.w  #-$383C,d2
-                addi.w  #-$383C,d3
+                addi.w  #$C7C4,d1
+                addi.w  #$C7C4,d2
+                addi.w  #$C7C4,d3
                 move.w  #0,d4
                 move.w  (word_FF8264).w,d5
                 move.w  (word_FF8266).w,d6
@@ -3220,7 +3220,7 @@ loc_1777E:                              ; CODE XREF: sub_17702+76   j
                 jmp     (gfx_insert_sprite_258C).l
 ; End of function sub_17702
 sub_177B6:                              ; CODE XREF: pstate_dash+B8   j pstate_pnx_start+C8   j ...
-                tst.w   (word_FFC5C0).w
+                tst.w   (stru_FFC5C0.unk0).w
                 beq.s   loc_177D8
                 move.l  #word_E8EBA,CRTL_SPRITE_PTR(a5)
                 btst    #0,(word_FFA000+1).w
@@ -3232,14 +3232,14 @@ loc_177D8:                              ; CODE XREF: sub_177B6+4   j
                 bsr.w   sub_16C62
                 bne.w   end
                 move.w  #$250,(a0)
-                clr.b   $21(a0)
+                clr.b   CRTL_UNK21(a0)
                 move.w  #$C880,CRTL_UNK2(a0)
                 move.l  #word_E8680,CRTL_SPRITE_PTR(a0)
                 move.w  CRTL_SPRITE_FLAGS(a5),d0
                 andi.w  #$FFFF,d0
                 move.w  d0,CRTL_SPRITE_FLAGS(a0)
-                move.b  CRTL_UNK20(a5),CRTL_UNK20(a0)
-                addq.b  #4,CRTL_UNK20(a0)
+                move.b  CRTL_SPR_SLOT(a5),CRTL_SPR_SLOT(a0)
+                addq.b  #4,CRTL_SPR_SLOT(a0)
                 move.w  #3,CRTL_UNK48(a0)
                 move.w  CRTL_XPOS(a5),CRTL_XPOS(a0)
                 move.w  CRTL_YPOS(a5),CRTL_YPOS(a0)
@@ -3252,15 +3252,15 @@ loc_177D8:                              ; CODE XREF: sub_177B6+4   j
                 bne.s   end
                 lea     (word_2ADFA).l,a1
                 move.w  #$FFF4,CRTL_XSPD(a0)
-                tst.w   $48(a5)
+                tst.w   CRTL_UNK48(a5)
                 bpl.s   loc_17852
                 lea     (word_2AE14).l,a1
                 neg.w   CRTL_XSPD(a0)
 loc_17852:                              ; CODE XREF: sub_177B6+90   j
                 jsr     (update_ent_61_a0).l
                 move.w  #$8880,CRTL_UNK2(a0)
-                move.b  CRTL_UNK20(a5),CRTL_UNK20(a0)
-                subq.b  #4,CRTL_UNK20(a0)
+                move.b  CRTL_SPR_SLOT(a5),CRTL_SPR_SLOT(a0)
+                subq.b  #4,CRTL_SPR_SLOT(a0)
                 move.w  CRTL_XPOS(a5),CRTL_XPOS(a0)
                 move.b  (RAND_NUM).w,d0
                 andi.w  #$1F,d0

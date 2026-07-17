@@ -85,64 +85,62 @@ class TileLogger:
 
 def unpack_rle(reader : BufferedReader, is_map=False):
     addr = reader.tell()
-    decomp_buffer = array('B')
-    decomp_buffer_cursor = 0
+    output = array('B')
+    output_cursor = 0
     
     size = read_u16(reader)
     #print(f'Address: {addr:02X}, size: {size:02X}')
 
     while reader.tell() <= addr + size:
         control_byte = read_u8(reader)
-        if control_byte >= 0x80:
-            tmp = control_byte
+        if (control_byte & (1 << 7)):
             cnt = ((control_byte >> 2) & 0x1F) + 1
-            tmp = (tmp << 8) & 0xFFFF
-            s = read_u8(reader)
-            tmp += s
-            tmp = (tmp & 0x3FF) + 1
-            cursor_window = decomp_buffer_cursor - tmp
+            tmp = (control_byte << 8) & 0xFFFF
+            tmp += read_u8(reader)
+            offset = (tmp & 0x3FF) + 1
+            cursor_window = output_cursor - offset
             for _ in range(cnt + 1):
-                s = decomp_buffer[cursor_window]
+                s = output[cursor_window]
                 cursor_window += 1
-                decomp_buffer.append(s)
-                decomp_buffer_cursor += 1
+                output.append(s)
+                output_cursor += 1
         else:
-            if (control_byte & (1 << 5)) != 0:
-                if (control_byte & (1 << 6)) != 0:
+            if (control_byte & (1 << 5)):
+                if (control_byte & (1 << 6)):
                     cnt = (control_byte & 0x1F) + 1
                     z = read_u8(reader)
                     for _ in range(cnt + 1):
-                        decomp_buffer.append(z)
+                        output.append(z)
                         s = read_u8(reader)
-                        decomp_buffer.append(s)
-                        decomp_buffer_cursor += 2
+                        output.append(s)
+                        output_cursor += 2
                 else:
                     cnt = (control_byte & 0x1F) + 1
                     s = read_u8(reader)
                     for _ in range(cnt + 1):
-                        decomp_buffer.append(s)
-                        decomp_buffer_cursor += 1
+                        output.append(s)
+                        output_cursor += 1
             else:
-                if (control_byte & (1 << 6)) != 0:
+                if (control_byte & (1 << 6)):
                     cnt = (control_byte & 0x1F) + 1
                     s1 = read_u8(reader)
                     s2 = read_u8(reader)
                     for _ in range(cnt + 1):
-                        decomp_buffer.append(s1)
-                        decomp_buffer.append(s2)
-                        decomp_buffer_cursor += 2
+                        output.append(s1)
+                        output.append(s2)
+                        output_cursor += 2
                 else:
                     cnt = (control_byte & 0x1F)
                     for _ in range(cnt + 1):
                         s = read_u8(reader)
-                        decomp_buffer.append(s)
-                        decomp_buffer_cursor += 1
+                        output.append(s)
+                        output_cursor += 1
     if is_map:
         with open(os.path.join(MAPPINGS_FOLDER, 'rle', f'{addr:02X}_map.bin'), 'w+b') as binary_file:
-            decomp_buffer.tofile(binary_file)        
+            output.tofile(binary_file)        
     else:
         with open(os.path.join(DATA_FOLDER, 'rle', 'decompressed', f'tiles_{addr:02X}.bin'), 'w+b') as binary_file:
-            decomp_buffer.tofile(binary_file)
+            output.tofile(binary_file)
 
 # i am so sorry for all this atrocious ass code bro
 def read_bits(

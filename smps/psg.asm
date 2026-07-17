@@ -118,7 +118,7 @@ jump1:                                  ; CODE XREF: psg_control+104   j
                 cmpi.b  #$10,d6
                 bcs.s   psg_att_set
                 moveq   #$F,d6
-psg_att_set:                            ; CODE XREF: fadeout_check+60   p volume_ramp_idk+114   p ...
+psg_att_set:                            ; CODE XREF: fadeout_check+60   p fade_spc_check+114   p ...
                 btst    #_null,(a5)
                 bne.s   enve_end
                 btst    #_write_protect,(a5)

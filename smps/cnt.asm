@@ -10,7 +10,7 @@ update_sound:                           ; CODE XREF: j_update_sound   j
                 clr.b   (sfxflag_).w
                 tst.b   (pause_flg_).w
                 bne.w   pause_check
-                jsr     volume_ramp_idk(pc)
+                jsr     fade_spc_check(pc)
                 jsr     delay_control(pc)
                 jsr     fadeout_check(pc)
                 tst.l   (keyflag_buf).w
@@ -853,7 +853,7 @@ loc_82B06:                              ; CODE XREF: play_snd_id+DC   j
                 andi.b  #$C0,d2
                 andi.b  #$C0,d3
                 cmp.b   d2,d0
-                bcs.w   locret_82BA0
+                bcs.w   end_82BA0
                 cmp.b   d3,d0
                 bcc.w   loc_82B1C
                 rts
@@ -875,14 +875,14 @@ loc_82B2A:                              ; CODE XREF: play_snd_id+118   j
                 move.b  dac_list_entry.pan_reg(a0),(dac_pan_reg_0).l
                 move.w  #z80_bus_off,(IO_Z80BUS).l
                 move    (sp)+,sr
-                btst    #5,5(a0)
-                beq.w   locret_82BA0
+                btst    #5,dac_list_entry.priority(a0)
+                beq.w   end_82BA0
                 btst    #5,d6
-                bne.w   locret_82BA0
-                cmpi.b  #2,(byte_FFF82B).w
-                beq.w   locret_82BA0
-                move.b  #1,(byte_FFF82B).w
-locret_82BA0:                           ; CODE XREF: play_snd_id+F6   j play_snd_id+16A   j ...
+                bne.w   end_82BA0
+                cmpi.b  #2,(fdspc_flg_in).w
+                beq.w   end_82BA0
+                move.b  #1,(fdspc_flg_in).w
+end_82BA0:                              ; CODE XREF: play_snd_id+F6   j play_snd_id+16A   j ...
                 rts
 ; ---------------------------------------------------------------------------
 z80opn_chk:                             ; CODE XREF: play_snd_id+96   j
@@ -906,7 +906,7 @@ loop1:                                  ; CODE XREF: play_snd_id+19E   j
                 bne.w   loc_82BFE
                 andi.b  #$C0,d1
                 cmp.b   d1,d0
-                bcs.w   locret_82C2E
+                bcs.w   end_82C2E
 loc_82BFE:                              ; CODE XREF: play_snd_id+1D6   j
                 andi.b  #$C0,d2
                 andi.b  #$C0,d3
@@ -924,7 +924,7 @@ loc_82BFE:                              ; CODE XREF: play_snd_id+1D6   j
 loc_82C28:                              ; CODE XREF: play_snd_id+202   j
                 cmp.b   d3,d0
                 bcc.w   loc_82D12
-locret_82C2E:                           ; CODE XREF: play_snd_id+1E0   j
+end_82C2E:                              ; CODE XREF: play_snd_id+1E0   j
                 rts
 ; ---------------------------------------------------------------------------
 loc_82C30:                              ; CODE XREF: play_snd_id+1F4   j play_snd_id+1FC   j
@@ -974,13 +974,13 @@ loc_82C9C:                              ; CODE XREF: play_snd_id+26E   j
                 move.w  #z80_bus_off,(IO_Z80BUS).l
                 move    (sp)+,sr
                 btst    #5,dac_list_entry.priority(a0)
-                beq.w   locret_82D10
+                beq.w   end_82D10
                 btst    #5,d6
-                bne.w   locret_82D10
-                cmpi.b  #2,(byte_FFF82B).w
-                beq.w   locret_82D10
-                move.b  #1,(byte_FFF82B).w
-locret_82D10:                           ; CODE XREF: play_snd_id+2DA   j play_snd_id+2E2   j ...
+                bne.w   end_82D10
+                cmpi.b  #2,(fdspc_flg_in).w
+                beq.w   end_82D10
+                move.b  #1,(fdspc_flg_in).w
+end_82D10:                              ; CODE XREF: play_snd_id+2DA   j play_snd_id+2E2   j ...
                 rts
 ; ---------------------------------------------------------------------------
 loc_82D12:                              ; CODE XREF: play_snd_id+210   j play_snd_id+21E   j ...
@@ -1010,13 +1010,13 @@ loc_82D4C:                              ; CODE XREF: play_snd_id+31E   j
                 move.w  #z80_bus_off,(IO_Z80BUS).l
                 move    (sp)+,sr
                 btst    #5,dac_list_entry.priority(a0)
-                beq.w   locret_82DC0
+                beq.w   end_82DC0
                 btst    #5,d6
-                bne.w   locret_82DC0
-                cmpi.b  #2,(byte_FFF82B).w
-                beq.w   locret_82DC0
-                move.b  #1,(byte_FFF82B).w
-locret_82DC0:                           ; CODE XREF: play_snd_id+38A   j play_snd_id+392   j ...
+                bne.w   end_82DC0
+                cmpi.b  #2,(fdspc_flg_in).w
+                beq.w   end_82DC0
+                move.b  #1,(fdspc_flg_in).w
+end_82DC0:                              ; CODE XREF: play_snd_id+38A   j play_snd_id+392   j ...
                 rts
 ; End of function play_snd_id
 get_pcm_data:                           ; CODE XREF: play_snd_id+24E   p play_snd_id+2FE   p
@@ -2016,82 +2016,82 @@ sixteen_nop_sub:                        ; CODE XREF: pause_check+40   p opn1_wri
                 nop
                 rts
 ; End of function sixteen_nop_sub
-volume_ramp_idk:                        ; CODE XREF: update_sound+C   p
+fade_spc_check:                         ; CODE XREF: update_sound+C   p
                                         ; DATA XREF: update_sound+C   o
-                cmpi.b  #2,(byte_FFF82B).w
-                beq.w   loc_836D2
-                move.b  (byte_FFF828).w,d0
-                beq.w   loc_836D2
-                bmi.w   loc_836C8
+                cmpi.b  #2,(fdspc_flg_in).w
+                beq.w   fadein
+                move.b  (fdspc_flg).w,d0
+                beq.w   fadein
+                bmi.w   fadeout
                 cmpi.b  #1,d0
-                bne.w   loc_836D2
-                move.b  #2,(byte_FFF828).w
-                bra.w   loc_8377A
+                bne.w   fadein
+                move.b  #2,(fdspc_flg).w
+                bra.w   raise_vol
 ; ---------------------------------------------------------------------------
-loc_836C8:                              ; CODE XREF: volume_ramp_idk+12   j
-                move.b  #0,(byte_FFF828).w
-                bra.w   loc_837C2
+fadeout:                                ; CODE XREF: fade_spc_check+12   j
+                move.b  #0,(fdspc_flg).w
+                bra.w   lower_vol
 ; ---------------------------------------------------------------------------
-loc_836D2:                              ; CODE XREF: volume_ramp_idk+6   j volume_ramp_idk+E   j ...
-                cmpi.b  #2,(byte_FFF828).w
+fadein:                                 ; CODE XREF: fade_spc_check+6   j fade_spc_check+E   j ...
+                cmpi.b  #2,(fdspc_flg).w
                 beq.w   end
-                move.b  (byte_FFF82B).w,d0
+                move.b  (fdspc_flg_in).w,d0
                 beq.w   end
                 cmpi.b  #1,d0
-                bne.w   loc_8373E
+                bne.w   jump4
                 move    sr,-(sp)
                 ori     #$700,sr
                 move.w  #z80_bus_on,(IO_Z80BUS).l
-loop:                                   ; CODE XREF: volume_ramp_idk+62   j
+z80loop0:                               ; CODE XREF: fade_spc_check+62   j
                 bset    #0,(IO_Z80BUS).l
-                bne.s   loop
+                bne.s   z80loop0
                 move.b  (z80_ram_byte_A01FFC).l,d7
                 move.w  #z80_bus_off,(IO_Z80BUS).l
                 move    (sp)+,sr
                 btst    #5,d7
                 beq.w   end
-                move.b  #2,(byte_FFF82B).w
-                move.b  (byte_FFF829).w,d0
-                or.b    (byte_FFF82A).w,d0
-                bne.w   loc_8377A
-                move.b  #$A,(byte_FFF829).w
-                move.b  #2,(byte_FFF82A).w
-                bra.w   loc_8377A
+                move.b  #2,(fdspc_flg_in).w
+                move.b  (fdspc_add_fm).w,d0
+                or.b    (fdspc_add_psg).w,d0
+                bne.w   raise_vol
+                move.b  #$A,(fdspc_add_fm).w
+                move.b  #2,(fdspc_add_psg).w
+                bra.w   raise_vol
 ; ---------------------------------------------------------------------------
-loc_8373E:                              ; CODE XREF: volume_ramp_idk+48   j
+jump4:                                  ; CODE XREF: fade_spc_check+48   j
                 move    sr,-(sp)
                 ori     #$700,sr
                 move.w  #z80_bus_on,(IO_Z80BUS).l
-loc_8374C:                              ; CODE XREF: volume_ramp_idk+B4   j
+z80loop1:                               ; CODE XREF: fade_spc_check+B4   j
                 bset    #0,(IO_Z80BUS).l
-                bne.s   loc_8374C
+                bne.s   z80loop1
                 move.b  (z80_ram_byte_A01FFC).l,d7
                 move.w  #z80_bus_off,(IO_Z80BUS).l
                 move    (sp)+,sr
                 btst    #5,d7
                 bne.w   end
-                move.b  #0,(byte_FFF82B).w
-                bra.w   loc_837C2
+                move.b  #0,(fdspc_flg_in).w
+                bra.w   lower_vol
 ; ---------------------------------------------------------------------------
-end:                                    ; CODE XREF: volume_ramp_idk+38   j volume_ramp_idk+40   j ...
+end:                                    ; CODE XREF: fade_spc_check+38   j fade_spc_check+40   j ...
                 rts
 ; ---------------------------------------------------------------------------
-loc_8377A:                              ; CODE XREF: volume_ramp_idk+24   j volume_ramp_idk+8A   j ...
-                move.b  (byte_FFF829).w,d6
+raise_vol:                              ; CODE XREF: fade_spc_check+24   j fade_spc_check+8A   j ...
+                move.b  (fdspc_add_fm).w,d6
                 lea     (fm_wk_top_).w,a5
                 moveq   #5,d7
-loop1:                                  ; CODE XREF: volume_ramp_idk+F6   j
+raise_fm:                               ; CODE XREF: fade_spc_check+F6   j
                 tst.b   (a5)
-                bpl.s   pass
+                bpl.s   is_neg
                 add.b   d6,volume(a5)
-                bmi.s   pass
+                bmi.s   is_neg
                 jsr     vol_set(pc)
-pass:                                   ; CODE XREF: volume_ramp_idk+E6   j volume_ramp_idk+EC   j
+is_neg:                                 ; CODE XREF: fade_spc_check+E6   j fade_spc_check+EC   j
                 adda.w  #flgvol,a5
-                dbf     d7,loop1
-                move.b  (byte_FFF82A).w,d5
+                dbf     d7,raise_fm
+                move.b  (fdspc_add_psg).w,d5
                 moveq   #2,d7
-loop3:                                  ; CODE XREF: volume_ramp_idk+11C   j
+raise_psg:                              ; CODE XREF: fade_spc_check+11C   j
                 tst.b   (a5)
                 bpl.s   end0
                 add.b   d5,volume(a5)
@@ -2099,38 +2099,38 @@ loop3:                                  ; CODE XREF: volume_ramp_idk+11C   j
                 bcc.s   end0
                 move.b  volume(a5),d6
                 jsr     psg_att_set(pc)
-end0:                                   ; CODE XREF: volume_ramp_idk+102   j volume_ramp_idk+10E   j
+end0:                                   ; CODE XREF: fade_spc_check+102   j fade_spc_check+10E   j
                 adda.w  #flgvol,a5
-                dbf     d7,loop3
+                dbf     d7,raise_psg
                 rts
 ; ---------------------------------------------------------------------------
-loc_837C2:                              ; CODE XREF: volume_ramp_idk+2E   j volume_ramp_idk+D4   j
-                move.b  (byte_FFF829).w,d6
+lower_vol:                              ; CODE XREF: fade_spc_check+2E   j fade_spc_check+D4   j
+                move.b  (fdspc_add_fm).w,d6
                 lea     (fm_wk_top_).w,a5
                 moveq   #5,d7
-loc_837CC:                              ; CODE XREF: volume_ramp_idk+13C   j
+lower_fm:                               ; CODE XREF: fade_spc_check+13C   j
                 tst.b   (a5)
-                bpl.s   loc_837D8
+                bpl.s   is_pos
                 sub.b   d6,volume(a5)
                 jsr     vol_set(pc)
-loc_837D8:                              ; CODE XREF: volume_ramp_idk+12E   j
+is_pos:                                 ; CODE XREF: fade_spc_check+12E   j
                 adda.w  #flgvol,a5
-                dbf     d7,loc_837CC
-                move.b  (byte_FFF82A).w,d5
+                dbf     d7,lower_fm
+                move.b  (fdspc_add_psg).w,d5
                 moveq   #2,d7
-loc_837E6:                              ; CODE XREF: volume_ramp_idk+15A   j
+lower_psg:                              ; CODE XREF: fade_spc_check+15A   j
                 tst.b   (a5)
                 bpl.s   end1
                 sub.b   d5,volume(a5)
                 move.b  volume(a5),d6
                 jsr     psg_att_set(pc)
-end1:                                   ; CODE XREF: volume_ramp_idk+148   j
+end1:                                   ; CODE XREF: fade_spc_check+148   j
                 adda.w  #flgvol,a5
-                dbf     d7,loc_837E6
-                clr.b   (byte_FFF829).w
-                clr.b   (byte_FFF82A).w
+                dbf     d7,lower_psg
+                clr.b   (fdspc_add_fm).w
+                clr.b   (fdspc_add_psg).w
                 rts
-; End of function volume_ramp_idk
+; End of function fade_spc_check
 ; ---------------------------------------------------------------------------
 fm_scale:       dc.w   606,  644,  683,  723,  766,  813 ; DATA XREF: fm_control+78   o
                 dc.w   860,  911,  965, 1023, 1084, 1148
