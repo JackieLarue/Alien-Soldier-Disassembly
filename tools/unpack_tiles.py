@@ -83,6 +83,8 @@ class TileLogger:
         self.log_unique('tile_map.txt', 2)
         self.log_unique('tile_rle.txt', 3)
 
+
+max_cnt_lzss = 0
 def unpack_rle(reader : BufferedReader, is_map=False):
     addr = reader.tell()
     output = array('B')
@@ -95,6 +97,10 @@ def unpack_rle(reader : BufferedReader, is_map=False):
         control_byte = read_u8(reader)
         if (control_byte & (1 << 7)):
             cnt = ((control_byte >> 2) & 0x1F) + 1
+            global max_cnt_lzss
+            if ((cnt + 1) > max_cnt_lzss):
+                max_cnt_lzss = cnt + 1
+            
             tmp = (control_byte << 8) & 0xFFFF
             tmp += read_u8(reader)
             offset = (tmp & 0x3FF) + 1
@@ -202,7 +208,7 @@ class ArrayStreamThing:
         return (self.buffer[self.cursor] << 8) | self.buffer[self.cursor+1]
 
     def read_u16(self) -> int:
-        slice = self.buffer[self.cursor_pos:self.cursor_pos + 2]
+        slice = self.buffer[self.cursor:self.cursor + 2]
         return struct.unpack(">H", bytes(slice))[0]     
     
     def write_offset(self, value, offset):
@@ -213,7 +219,7 @@ class ArrayStreamThing:
         self.buffer[self.cursor + offset + 1] = lo
 
     def compact_to_output(self, output_data):
-        cursor_pos = 0
+        cursor = 0
         for i in range(0, 32):
             hi = self.read_u16()
             
@@ -397,4 +403,5 @@ if __name__ == '__main__':
     
     rom.seek(0x1291DE)
     unpack_rle(rom)
+    print(max_cnt_lzss)
     logger.log_all()
